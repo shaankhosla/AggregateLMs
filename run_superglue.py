@@ -51,16 +51,25 @@ require_version(
     "To fix: pip install -r examples/pytorch/text-classification/requirements.txt",
 )
 
+# task_to_keys = {
+#     "cola": ("sentence", None),
+#     "mnli": ("premise", "hypothesis"),
+#     "mrpc": ("sentence1", "sentence2"),
+#     "qnli": ("question", "sentence"),
+#     "qqp": ("question1", "question2"),
+#     "rte": ("sentence1", "sentence2"),
+#     "sst2": ("sentence", None),
+#     "stsb": ("sentence1", "sentence2"),
+#     "wnli": ("sentence1", "sentence2"),
+# }
 task_to_keys = {
-    "cola": ("sentence", None),
-    "mnli": ("premise", "hypothesis"),
-    "mrpc": ("sentence1", "sentence2"),
-    "qnli": ("question", "sentence"),
-    "qqp": ("question1", "question2"),
-    "rte": ("sentence1", "sentence2"),
-    "sst2": ("sentence", None),
-    "stsb": ("sentence1", "sentence2"),
-    "wnli": ("sentence1", "sentence2"),
+    "boolq": ("question", "passage"),
+    "cb": ("premise", "hypothesis"),
+    "copa": ("premise", "choice1", "choice2", "question"),
+    "multirc": ("question", "answer"),
+    "record": ("passage", "query"),
+    "rte": ("premise", "hypothesis"),
+    "wic": ("sentence1", "sentence2"),
 }
 
 
@@ -105,7 +114,7 @@ def train(model_args, data_args, training_args):
     if data_args["task_name"] is not None:
         # Downloading and loading a dataset from the hub.
         raw_datasets = load_dataset(
-            "glue",
+            "super_glue",
             data_args["task_name"],
             cache_dir=model_args["cache_dir"],
             use_auth_token=True if model_args.get("use_auth_token") else None,

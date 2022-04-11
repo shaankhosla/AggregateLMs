@@ -1,6 +1,6 @@
 from transformers import TrainingArguments
 
-from run_glue import train
+from run_superglue import train
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
         "use_auth_token": False,
     }
     DataTrainingArguments = {
-        "task_name": "mrpc",
+        "task_name": "rte",
         "dataset_name": None,
         "dataset_config_name": None,
         "max_seq_length": 256,
