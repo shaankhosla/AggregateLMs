@@ -76,19 +76,19 @@ test_data = dataset.CBDataset(test_df, tokenizer, task_name)
 ## and hyperparameters of your best run.
 
 ### NEED TO LOOK AT THIS AND NOT SURE WHERE LOGGING AND MODEL CHECKPOINTS AND ALL OF THAT GO TO BE HONEST.
-training_args = TrainingArguments(
-    output_dir=args.output_dir,
+"""training_args = TrainingArguments(
+    output_dir="/scratch/pfi203/outputs/model_checkpoints",
     overwrite_output_dir=True,
     do_train=True,
     do_eval=True,
-    per_gpu_train_batch_size=8,
+    #per_gpu_train_batch_size=8,
     per_gpu_eval_batch_size=64,
-    num_train_epochs=3, # due to time/computation constraints
+    #num_train_epochs=3, # due to time/computation constraints
     logging_steps=500,
     logging_first_step=True,
     save_strategy="epoch",
     evaluation_strategy = "epoch", # evaluate at the end of every epoch
-    weight_decay=0.01,
+    #weight_decay=0.01,
     disable_tqdm=True
 )
 
@@ -103,7 +103,7 @@ trainer = Trainer(
     tokenizer=tokenizer,
     model_init=model_init_for_task,
     compute_metrics=finetuning_utils.compute_metrics
-)
+)"""
 
     
     # Choose among schedulers:
@@ -111,20 +111,54 @@ trainer = Trainer(
     #scheduler=ASHAScheduler(metric="objective", mode="max"))
 def hp_space_call(trial):
     
-    return {"learning_rate": tune.uniform(1e-5, 5e-5)}#, 3e-5, 4e-5, 5e-5]}
+    return {"learning_rate": tune.uniform(1e-5, 5e-5),
+            "weight_decay": tune.uniform(1e-2, 1e-1)}
 
 def main():
-    print("hyperparam search model")
-    best_trial = trainer.hyperparameter_search(
-    hp_space=hp_space_call,
-    direction="maximize",
-    backend="ray",
-    search_alg=BayesOptSearch(mode="max"),
-    n_trials=3,
-    compute_objective=lambda x: x['eval_accuracy']
-)
-    print("After hyperparam search, best run below:")
-    print(best_trial)
+    for num_train_epochs_ in [3,4]:
+        for train_batch_size in [8, 16, 32]:
+            training_args = TrainingArguments(
+                output_dir=args.output_dir,
+                overwrite_output_dir=True,
+                do_train=True,
+                do_eval=True,
+                per_gpu_train_batch_size=train_batch_size,
+                per_gpu_eval_batch_size=64,
+                num_train_epochs=num_train_epochs_, # due to time/computation constraints
+                logging_steps=500,
+                logging_first_step=True,
+                save_strategy="epoch",
+                evaluation_strategy = "epoch", # evaluate at the end of every epoch
+                #weight_decay=0.01,
+                disable_tqdm=True)
+
+
+            model_init_for_task = partial(finetuning_utils.model_init, task_name)
+
+### LOOKED AT THESE ARGUMENTS AND IT LOOKED GOOD: I DID put in the compute metrics, model init, and put in the right training and val data
+            trainer = Trainer(
+                args=training_args,
+                train_dataset=train_data,
+                eval_dataset=val_data,
+                tokenizer=tokenizer,
+                model_init=model_init_for_task,
+                compute_metrics=finetuning_utils.compute_metrics
+            )
+            print("hyperparam search model")
+            best_trial = trainer.hyperparameter_search(
+            hp_space=hp_space_call,
+            direction="maximize",
+            backend="ray",
+            search_alg=BayesOptSearch(mode="max"),
+            n_trials=3,
+            compute_objective=lambda x: x['eval_accuracy']
+            )
+            print("After hyperparam search, best run below:")
+            print(best_trial)
+            print(f"num train epochs: {num_train_epochs_}. train batch  size: {train_batch_size}")
+            print("----------------------------------------------------------------------------------")
+            print("----------------------------------------------------------------------------------")
+            print("----------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
     main()
