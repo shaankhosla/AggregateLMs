@@ -6,6 +6,6 @@ mkdir -p /scratch/$USER/outputs
 mkdir -p /scratch/$USER/outputs/models
 mkdir -p /scratch/$USER/outputs/model_checkpoints
 
-pip install -r $1/requirements.txt
-#bash $1/download_data.sh
-python $1/run_hyperparameter_search.py -d /scratch/$USER/superglue/$2
+pip install -r /scratch/$USER/AggregateLMs/requirements.txt
+bash /scratch/$USER/AggregateLMs/download_data.sh
+python $1/run_hyperparameter_search.py -d /scratch/$USER/superglue/$2 -o /scratch/$USER/outputs/model_checkpoints

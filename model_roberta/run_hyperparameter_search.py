@@ -1,7 +1,5 @@
-"""Run a hyperparameter search on a RoBERTa model fine-tuned on CB.
+"""Run a hyperparameter search on a RoBERTa model fine-tuned on a SuperGLUE task.
 
-Example usage:
-    python run_hyperparameter_search.py tmp/RTE
 """
 import argparse
 import dataset
@@ -27,7 +25,13 @@ parser.add_argument(
     "-d",
     "--data_dir",
     type=str,
-    help="Directory containing the CB dataset. Can be downloaded from SuperGLUE resources",
+    help="Directory containing the relevant SuperGLUE dataset.",
+)
+parser.add_argument(
+    "-o",
+    "--output_dir",
+    type=str,
+    help="Directory containing the relevant SuperGLUE dataset.",
 )
 
 args = parser.parse_args()
@@ -73,7 +77,7 @@ test_data = dataset.CBDataset(test_df, tokenizer, task_name)
 
 ### NEED TO LOOK AT THIS AND NOT SURE WHERE LOGGING AND MODEL CHECKPOINTS AND ALL OF THAT GO TO BE HONEST.
 training_args = TrainingArguments(
-    output_dir="/scratch/pfi203/outputs/model_checkpoints",
+    output_dir=args.output_dir,
     overwrite_output_dir=True,
     do_train=True,
     do_eval=True,
