@@ -5,6 +5,7 @@
 mkdir -p /scratch/$USER/outputs
 mkdir -p /scratch/$USER/outputs/models
 mkdir -p /scratch/$USER/outputs/model_checkpoints
+mkdir -p /scratch/$USER/AggregateLMs/slurm_logs
 
 pip install -r /scratch/$USER/AggregateLMs/requirements.txt
 bash /scratch/$USER/AggregateLMs/download_data.sh
