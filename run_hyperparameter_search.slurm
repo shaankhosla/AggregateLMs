@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=nlu_hyperparameter_tuning
 #SBATCH --open-mode=append
-#SBATCH --output=/scratch/aml731/nlu_%j_%x.out
-#SBATCH --error=/scratch/aml731/nlu_%j_%x.err
+#SBATCH --output=slurm_logs/%j_%x.out
+#SBATCH --error=slurm_logs/%j_%x.err
 #SBATCH --export=ALL
-#SBATCH --time=02:00:00
+#SBATCH --time=01:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --mem=12G
 #SBATCH -c 1
