@@ -74,16 +74,16 @@ test_data = dataset.CBDataset(test_df, tokenizer, task_name)
 
 ### NEED TO LOOK AT THIS AND NOT SURE WHERE LOGGING AND MODEL CHECKPOINTS AND ALL OF THAT GO TO BE HONEST.
 training_args = TrainingArguments(
-    output_dir="outputs",
+    output_dir="/scratch/pfi203/outputs/model_checkpoints",
     overwrite_output_dir=True,
     do_train=True,
     do_eval=True,
     per_gpu_train_batch_size=8,
     per_gpu_eval_batch_size=64,
-    num_train_epochs=1, # due to time/computation constraints
+    num_train_epochs=3, # due to time/computation constraints
     logging_steps=500,
     logging_first_step=True,
-    save_steps=1000,
+    save_strategy="epoch",
     evaluation_strategy = "epoch", # evaluate at the end of every epoch
     weight_decay=0.01,
     disable_tqdm=True
@@ -123,5 +123,6 @@ def main():
     print("After hyperparam search, best run below:")
     print(best_trial)
 
+    #trainer.save_model(output_dir="/scratch/pfi203/outputs/models")
 if __name__ == "__main__":
     main()

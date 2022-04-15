@@ -2,7 +2,7 @@
 
 cache_dir=$1
 if [[ -z $cache_dir ]]; then
-	cache_dir=/tmp/superglue 
+	cache_dir=/scratch/$USER/superglue 
 fi
 
 
