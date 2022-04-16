@@ -18,10 +18,8 @@ def compute_metrics(eval_pred):
 
     accuracy = np.mean(labels==preds)
 
-    precision = np.mean(labels[np.argwhere(preds==1)].flatten())
-    recall = np.mean(preds[np.argwhere(labels==1)].flatten())
-    f1 = 2 * precision * recall / (precision + recall)
-
+    precision, recall, f1, support = precision_recall_fscore_support(labels, preds, beta=1, average='micro')
+    
     metrics = {"accuracy":accuracy,
                "precision":precision,
                "recall":recall,
