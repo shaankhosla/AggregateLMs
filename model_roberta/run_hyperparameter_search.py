@@ -56,6 +56,7 @@ else:
     train_df = data_utils.process_multirc_jsonl(f"{args.data_dir}/train.jsonl", " ")
     val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,)
 
+
 tokenizer = RobertaTokenizerFast.from_pretrained("roberta-base")
 train_data = dataset.CBDataset(train_df, tokenizer, task_name)
 val_data = dataset.CBDataset(val_df, tokenizer, task_name)
@@ -151,7 +152,7 @@ def main():
             backend="ray",
             search_alg=BayesOptSearch(mode="max"),
             n_trials=3,
-            compute_objective=lambda x: x['eval_accuracy']
+            compute_objective=lambda x: x['eval_dummymetric']
             )
             print("After hyperparam search, best run below:")
             print(best_trial)
