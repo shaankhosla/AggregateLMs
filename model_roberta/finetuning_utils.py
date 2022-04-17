@@ -16,15 +16,19 @@ def compute_metrics(eval_pred):
     # precision, recall, f1, support = precision_recall_fscore_support(labels,preds,average='binary')
     # accuracy = accuracy_score(labels,preds)
 
+    if eval_pred.predictions.shape[1] > 2: # more than two classes
+        average_strategy='macro'
+    else:
+        average_strategy='binary'
+
     accuracy = np.mean(labels==preds)
 
-    precision, recall, f1, support = precision_recall_fscore_support(labels, preds, beta=1, average='micro')
-    dummymetric = np.random.uniform()
+    precision, recall, f1, support = precision_recall_fscore_support(labels, preds, average=average_strategy)
+
     metrics = {"accuracy":accuracy,
                "precision":precision,
                "recall":recall,
-               "f1":f1,
-               "dummymetric":dummymetric}
+               "f1":f1}
     return metrics
 
 

@@ -116,8 +116,8 @@ def hp_space_call(trial):
             "weight_decay": tune.uniform(1e-2, 1e-1)}
 
 def main():
-    for num_train_epochs_ in [3,4]:
-        for train_batch_size in [8, 16, 32]:
+    for num_train_epochs_ in [3]: #[3,4]
+        for train_batch_size in [8]: #[8, 16, 32]
             training_args = TrainingArguments(
                 output_dir=args.output_dir,
                 overwrite_output_dir=True,
@@ -152,7 +152,7 @@ def main():
             backend="ray",
             search_alg=BayesOptSearch(mode="max"),
             n_trials=3,
-            compute_objective=lambda x: x['eval_dummymetric']
+            compute_objective=lambda x: x['eval_f1']
             )
             print("After hyperparam search, best run below:")
             print(best_trial)
