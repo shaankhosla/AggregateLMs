@@ -19,12 +19,12 @@ def compute_metrics(eval_pred):
     accuracy = np.mean(labels==preds)
 
     precision, recall, f1, support = precision_recall_fscore_support(labels, preds, beta=1, average='micro')
-    
+    dummymetric = np.random.uniform()
     metrics = {"accuracy":accuracy,
                "precision":precision,
                "recall":recall,
-               "f1":f1
-              }
+               "f1":f1,
+               "dummymetric":dummymetric}
     return metrics
 
 
