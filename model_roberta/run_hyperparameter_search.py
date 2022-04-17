@@ -11,7 +11,7 @@ import os
 from functools import partial
 
 from sklearn.model_selection import train_test_split
-from transformers import RobertaTokenizerFast, TrainingArguments, Trainer
+from transformers import RobertaTokenizer, TrainingArguments, Trainer
 from ray.tune.suggest.bayesopt import BayesOptSearch
 from ray import tune
 import ray
@@ -57,7 +57,7 @@ else:
     val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,)
 
 
-tokenizer = RobertaTokenizerFast.from_pretrained("roberta-base")
+tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
 train_data = dataset.CBDataset(train_df, tokenizer, task_name)
 val_data = dataset.CBDataset(val_df, tokenizer, task_name)
 test_data = dataset.CBDataset(test_df, tokenizer, task_name)
@@ -113,11 +113,11 @@ trainer = Trainer(
 def hp_space_call(trial):
     
     return {"learning_rate": tune.uniform(1e-5, 5e-5),
-            "weight_decay": tune.uniform(1e-2, 1e-1)}
+            "weight_decay": tune.uniform(1e-3, 5e-1)}
 
 def main():
-    for num_train_epochs_ in [3]: #[3,4]
-        for train_batch_size in [8]: #[8, 16, 32]
+    for num_train_epochs_ in [3,4,5]:
+        for train_batch_size in [8, 16, 32]:
             training_args = TrainingArguments(
                 output_dir=args.output_dir,
                 overwrite_output_dir=True,
@@ -135,8 +135,11 @@ def main():
 
 
             model_init_for_task = partial(finetuning_utils.model_init, task_name)
-
-### LOOKED AT THESE ARGUMENTS AND IT LOOKED GOOD: I DID put in the compute metrics, model init, and put in the right training and val data
+            eval_method_dict = {'CB':"eval_f1",
+                                'MultiRC':'eval_f1',
+                                'BoolQ':'eval_accuracy',
+                                'RTE':'eval_accuracy'}
+            
             trainer = Trainer(
                 args=training_args,
                 train_dataset=train_data,
@@ -151,8 +154,8 @@ def main():
             direction="maximize",
             backend="ray",
             search_alg=BayesOptSearch(mode="max"),
-            n_trials=3,
-            compute_objective=lambda x: x['eval_f1']
+            n_trials=5,
+            compute_objective=lambda x: x[eval_method_dict[task_name]]
             )
             print("After hyperparam search, best run below:")
             print(best_trial)
