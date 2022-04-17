@@ -134,7 +134,7 @@ def main():
         save_dir = os.path.join(args.save_dir,'roberta', str(i))
         
         if not os.path.isdir(save_dir):
-            os.mkdir(save_dir)
+            os.makedirs(save_dir)
 
         print(f"Done training model, saving model in {save_dir}")
 
