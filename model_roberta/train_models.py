@@ -113,7 +113,7 @@ def main():
             per_device_train_batch_size=args.training_batch_size,
             num_train_epochs=args.epochs, # due to time/computation constraints
             logging_strategy="no",
-            save_strategy="epoch",
+            save_strategy="no",
             weight_decay=args.weight_decay,
             learning_rate=args.learning_rate,
             disable_tqdm=True)
