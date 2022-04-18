@@ -68,8 +68,8 @@ def load_models(model_dir):
         if not os.path.isdir(model_dir+"/"+directory+"/"):
             continue
         directory = model_dir+"/"+directory+"/"
-        model = GPT2ForSequenceClassification.from_pretrained(directory, problem_type="multi_label_classification")
-        tokenizer = GPT2Tokenizer.from_pretrained(directory)
+        model = RobertaForSequenceClassification.from_pretrained(directory, problem_type="multi_label_classification")
+        tokenizer = RobertaTokenizer.from_pretrained(directory)
         print("first model - " + str(type(model)))
         models.append(model)
         tokenizers.append(tokenizer)
@@ -114,24 +114,24 @@ def prune_models(models):
 
 def run_evaluation(models, tokenizers,task_name, test_df):
     y_preds = []
-    inputs = list(test_df['question_answer_concat'].head(5))
-    y_true = list(test_df['label'].head(5))
-    for input in inputs:
+    y_true = data_utils.extract_labels(test_df,task_name)[:5]
+
+    for i in range(len(y_true)):
         votingDict = defaultdict(int)
-        for model,tokenizer in zip(models,tokenizers):
-            if task_name == "MultiRC":
-                input = tokenizer(str(input),return_tensors="pt")
+        for model in models:
+            if task_name == "MultiRC" or task_name == "BoolQ":
+                tokenizedinput = data_utils.encode_data(test_df[i:i+1],tokenizers[0],task_name)
                 with torch.no_grad():
-                    logits = model(**input).logits
+                    logits = model(**tokenizedinput).logits
                     print(logits)
                 predicted_class_id = int(torch.argmax(logits, axis=-1)[0])
                 votingDict[model.config.id2label[predicted_class_id]] += 1
             else:
                 continue
-        print(votingDict)
+        #print(votingDict)
         y_pred = max(votingDict, key=votingDict.get)
-        y_preds.append(int((y_pred.replace("LABEL_1","0").replace("LABEL_2","1"))))
-    target_names = ['1','0']
+        y_preds.append(int((y_pred.replace("LABEL_1","1").replace("LABEL_0","0"))))
+    target_names = ['0','1']
     print(y_preds)
     return classification_report(y_true, y_preds, target_names=target_names)
     #return precision_recall_fscore_support(y_true, y_preds, average="macro")

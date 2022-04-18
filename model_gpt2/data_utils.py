@@ -76,8 +76,8 @@ def encode_data(dataset, tokenizer, task_name, max_seq_length=512):
         seq2 = seq2 + " "
       seq2 = seq2 + part
 
-    encoded_input = tokenizer(seq1.to_list(), seq2.to_list(), return_tensors='pt', truncation=True, padding='max_length', max_length=task_to_encode_config[task_name]['max_seq_length'], return_attention_mask=True)\
-
+    encoded_input = tokenizer(seq1.to_list(), seq2.to_list(), return_tensors='pt', truncation=True, padding='max_length', max_length=task_to_encode_config[task_name]['max_seq_length'])
+    return encoded_input
     input_ids = encoded_input['input_ids']
     attention_mask = encoded_input['attention_mask']
 
