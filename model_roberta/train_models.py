@@ -131,7 +131,7 @@ def main():
         print("Training model now")
         trainer.train()
         
-        save_dir = os.path.join(args.save_dir,'roberta', str(i))
+        save_dir = os.path.join(args.save_dir,'roberta', task_name, str(i)) 
         
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
