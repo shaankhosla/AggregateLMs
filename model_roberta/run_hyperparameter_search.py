@@ -113,11 +113,11 @@ trainer = Trainer(
 def hp_space_call(trial):
     
     return {"learning_rate": tune.uniform(1e-5, 5e-5),
-            "weight_decay": tune.uniform(1e-3, 5e-1)}
+            "weight_decay": tune.uniform(5e-3, 2e-1)}
 
 def main():
-    for num_train_epochs_ in [3,4,5]:
-        for train_batch_size in [8, 16, 32]:
+    for num_train_epochs_ in [3,5,7]:
+        for train_batch_size in [16, 32]:
             training_args = TrainingArguments(
                 output_dir=args.output_dir,
                 overwrite_output_dir=True,
