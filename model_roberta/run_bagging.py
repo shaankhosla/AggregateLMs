@@ -64,7 +64,7 @@ def load_models(model_dir):
             continue
         directory = model_dir + "/" + directory + "/"
         model = RobertaForSequenceClassification.from_pretrained(
-            "roberta-base", problem_type="multi_label_classification"
+            directory, problem_type="multi_label_classification"
         )
         print("first model - " + str(type(model)))
         models.append(model)
@@ -106,35 +106,42 @@ def prune_models(models):
     return new_models
 
 
+import numpy as np
+
+
 def run_evaluation(models, task_name, test_df):
     y_preds = []
-    y_true = data_utils.extract_labels(test_df, task_name)[:50]
+    y_true = data_utils.extract_labels(test_df, task_name)[:25]
 
     for i in range(len(y_true)):
         votingDict = defaultdict(int)
+        summed_probs = []
         for model in models:
             if task_name == "MultiRC" or task_name == "BoolQ":
-                print(test_df[i : i + 1])
                 tokenizedinput = data_utils.encode_data(
                     test_df[i : i + 1], tokenizer, task_name
                 )
-                with torch.no_grad():
+                with torch.inference_mode():
                     logits = model(**tokenizedinput).logits
-                    print(logits)
+                    probs = torch.nn.functional.softmax(logits, dim=1)
+                    summed_probs.append(np.array(probs[0]))
+
                 predicted_class_id = int(torch.argmax(logits, axis=-1)[0])
                 votingDict[model.config.id2label[predicted_class_id]] += 1
             else:
                 continue
-        y_pred = max(votingDict, key=votingDict.get)
-        y_preds.append(int(y_pred.replace("LABEL_1", "1").replace("LABEL_0", "0")))
+        y_pred = np.array(summed_probs)
+        y_pred = np.sum(summed_probs, axis=0)
+        predicted_class_id = int(np.argmax(y_pred, axis=-1))
+        y_preds.append(predicted_class_id)
     target_names = ["0", "1"]
-    print(y_preds)
     return classification_report(y_true, y_preds, target_names=target_names)
     # return precision_recall_fscore_support(y_true, y_preds, average="macro")
 
 
 model_dir = "../models/"
 models = load_models(model_dir)
-print(len(models))
+print(len(models), "models")
 # models = prune_models(models)
-run_evaluation(models, task_name, test_df)
+report = run_evaluation(models, task_name, test_df)
+print(report)
