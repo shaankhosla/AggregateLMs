@@ -13,9 +13,11 @@ import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import classification_report
 from torch.nn.utils import prune
 from transformers import RobertaForSequenceClassification
 from transformers import RobertaTokenizer
+from transformers import GPT2Tokenizer, GPT2ForSequenceClassification
 from transformers import Trainer
 from transformers import TrainingArguments
 from yaml import load
@@ -66,8 +68,9 @@ def load_models(model_dir):
         if not os.path.isdir(model_dir+"/"+directory+"/"):
             continue
         directory = model_dir+"/"+directory+"/"
-        model = RobertaForSequenceClassification.from_pretrained(directory)
         tokenizer = RobertaTokenizer.from_pretrained(directory)
+        model = RobertaForSequenceClassification.from_pretrained(directory,problem_type="multi_label_classification")
+        print("first model - " + str(type(model)))
         models.append(model)
         tokenizers.append(tokenizer)
     return models, tokenizers
@@ -87,6 +90,7 @@ def count_nonzero(model):
 
 
 def prune_models(models):
+    new_models = []
     for model in models:
         print(count_parameters(model), count_nonzero(model))
         module_tups = []
@@ -101,29 +105,40 @@ def prune_models(models):
 
         for module, _ in module_tups:
             prune.remove(module, "weight")
-        print(count_parameters(model), count_nonzero(model))
+        #print(count_parameters(model), count_nonzero(model))
+        new_models.append(model)
+    print("models pruned!")
+    return new_models
 
 
-def run_evaluation(models, task_name, test_df):
+
+def run_evaluation(models, tokenizers,task_name, test_df):
     y_preds = []
-    inputs = test_df['question_answer_concat']
-    y_true = test_df['label']
-    for input in inputs:
+    y_true = data_utils.extract_labels(test_df,task_name)[:5]
+
+    for i in range(len(y_true)):
         votingDict = defaultdict(int)
         for model in models:
-            if task_name == "MultiRC":
+            if task_name == "MultiRC" or task_name == "BoolQ":
+                tokenizedinput = data_utils.encode_data(test_df[i:i+1],tokenizers[0],task_name)
+                print("Tokenized input \n")
+                print(tokenizedinput)
                 with torch.no_grad():
-                    logits = model(**input).logits
-
+                    logits = model(**tokenizedinput).logits
+                    print(logits)
                 predicted_class_id = int(torch.argmax(logits, axis=-1)[0])
                 votingDict[model.config.id2label[predicted_class_id]] += 1
             else:
-                y_pred = max(votingDict, key=votingDict.get)
-                y_preds.append(y_pred)
-    return precision_recall_fscore_support(y_true, y_preds, average='macro')
+                continue
+        #print(votingDict)
+        y_pred = max(votingDict, key=votingDict.get)
+        y_preds.append(int((y_pred.replace("LABEL_1","1").replace("LABEL_0","0"))))
+    target_names = ['0','1']
+    print(y_preds)
+    return classification_report(y_true, y_preds, target_names=target_names)
+    #return precision_recall_fscore_support(y_true, y_preds, average="macro")
 
-
-models = load_models("../models/")
-print("Models are - " + str(models))
-models = prune_models(models)
-print(run_evaluation(models, task_name, test_df))
+model_dir = "../models/"
+models,tokenizers = load_models(model_dir)
+#pruned_models = prune_models(models)
+print(run_evaluation(models, tokenizers,task_name, test_df))
