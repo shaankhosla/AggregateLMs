@@ -68,8 +68,8 @@ def load_models(model_dir):
         if not os.path.isdir(model_dir+"/"+directory+"/"):
             continue
         directory = model_dir+"/"+directory+"/"
-        model = RobertaForSequenceClassification.from_pretrained(directory, problem_type="multi_label_classification")
-        tokenizer = RobertaTokenizer.from_pretrained(directory)
+        tokenizer = GPT2Tokenizer.from_pretrained("microsoft/DialogRPT-updown")
+        model = GPT2ForSequenceClassification.from_pretrained("microsoft/DialogRPT-updown",problem_type="multi_label_classification")
         print("first model - " + str(type(model)))
         models.append(model)
         tokenizers.append(tokenizer)
@@ -121,6 +121,7 @@ def run_evaluation(models, tokenizers,task_name, test_df):
         for model in models:
             if task_name == "MultiRC" or task_name == "BoolQ":
                 tokenizedinput = data_utils.encode_data(test_df[i:i+1],tokenizers[0],task_name)
+                print(tokenizedinput)
                 with torch.no_grad():
                     logits = model(**tokenizedinput).logits
                     print(logits)
