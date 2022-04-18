@@ -51,10 +51,11 @@ if task_name != 'MultiRC':
     val_df, test_df = train_test_split(
         pd.read_json(f"{args.data_dir}/val.jsonl", lines=True, orient="records"),
         test_size=0.5,
+        random_state=42
     )
 else:
     train_df = data_utils.process_multirc_jsonl(f"{args.data_dir}/train.jsonl", " ")
-    val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,)
+    val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,random_state=42)
 
 
 tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
@@ -113,11 +114,11 @@ trainer = Trainer(
 def hp_space_call(trial):
     
     return {"learning_rate": tune.uniform(1e-5, 5e-5),
-            "weight_decay": tune.uniform(1e-3, 5e-1)}
+            "weight_decay": tune.uniform(5e-3, 2e-1)}
 
 def main():
-    for num_train_epochs_ in [3,4,5]:
-        for train_batch_size in [8, 16, 32]:
+    for num_train_epochs_ in [3,5,7]:
+        for train_batch_size in [16, 32]:
             training_args = TrainingArguments(
                 output_dir=args.output_dir,
                 overwrite_output_dir=True,
