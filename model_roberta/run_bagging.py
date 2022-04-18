@@ -95,7 +95,7 @@ def prune_models(models):
             x = layer.split(".weight")[0]
             module_tups.append((get_module_by_name(model, x), "weight"))
         prune.global_unstructured(
-            parameters=module_tups, pruning_method=prune.L1Unstructured, amount=0.5
+            parameters=module_tups, pruning_method=prune.L1Unstructured, amount=0.2
         )
 
         for module, _ in module_tups:
@@ -111,7 +111,7 @@ import numpy as np
 
 def run_evaluation(models, task_name, test_df):
     y_preds = []
-    y_true = data_utils.extract_labels(test_df, task_name)[:25]
+    y_true = data_utils.extract_labels(test_df, task_name)[:100]
 
     for i in range(len(y_true)):
         votingDict = defaultdict(int)
@@ -123,6 +123,7 @@ def run_evaluation(models, task_name, test_df):
                 )
                 with torch.inference_mode():
                     logits = model(**tokenizedinput).logits
+                    print(logits)
                     probs = torch.nn.functional.softmax(logits, dim=1)
                     summed_probs.append(np.array(probs[0]))
 
@@ -134,14 +135,22 @@ def run_evaluation(models, task_name, test_df):
         y_pred = np.sum(summed_probs, axis=0)
         predicted_class_id = int(np.argmax(y_pred, axis=-1))
         y_preds.append(predicted_class_id)
+    print(y_preds)
     target_names = ["0", "1"]
-    return classification_report(y_true, y_preds, target_names=target_names)
-    # return precision_recall_fscore_support(y_true, y_preds, average="macro")
+    if len(logits)> 2: # more than two classes
+        average_strategy='macro'
+    else:
+        average_strategy='binary'
+
+    return classification_report(y_true, y_preds, target_names=target_names),precision_recall_fscore_support(y_true, y_preds, average=average_strategy)
+
+
+
 
 
 model_dir = "../models/"
 models = load_models(model_dir)
 print(len(models), "models")
-# models = prune_models(models)
+models = prune_models(models)
 report = run_evaluation(models, task_name, test_df)
 print(report)
