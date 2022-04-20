@@ -47,7 +47,7 @@ AggregateLMs/
    python /scratch/pfi203/AggregateLMs/model_roberta/train_models.py -d <data_dir>-o /<checkpoint_dir> -s <saved_model dir> <hyperparams ex: -e 3 -t 16 -lr 0.005 -w 0.001 -n 3>
 
    ```
-- <b>Evaluation of ensembled models:</b>
+- <b>Evaluation of ensembled models:</b> <br>
   For RoBERTa,
   ```
    python model_roberta/run_bagging.py
