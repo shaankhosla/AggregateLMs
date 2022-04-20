@@ -23,7 +23,7 @@ AggregateLMs/
 │    ├──SuperGLUE
 ```
 ## How to Run
-- Download data: <br>
+- <b>Download data: </b><br>
    ```
    ./download_data.sh
    ```
@@ -32,7 +32,7 @@ AggregateLMs/
    curl -s -J -L  https://dl.fbaipublicfiles.com/glue/superglue/data/v2/combined.zip -o ./super.zip
    unzip super.zip -d <data_dir>
    ```
-- Hyperparameter Search: <br>
+- <b>Hyperparameter Search:</b> <br>
    For RoBERTa,
    ```
    python model_roberta/run_hyperparameter_search.py -d <data_dir> -o <checkpoint_dir>
@@ -41,13 +41,13 @@ AggregateLMs/
    ```
    python model_gpt2/run_hyperparameter_search.py -d <data_dir> -o <checkpoint_dir>
    ```
-- Model Training Given Hyperparameters: <br>
+- <b>Model Training Given Hyperparameters:</b> <br>
   For RoBERTa,
    ```
    python /scratch/pfi203/AggregateLMs/model_roberta/train_models.py -d <data_dir>-o /<checkpoint_dir> -s <saved_model dir> <hyperparams ex: -e 3 -t 16 -lr 0.005 -w 0.001 -n 3>
 
    ```
-- Evaluation of ensembled models:
+- <b>Evaluation of ensembled models:</b>
   For RoBERTa,
   ```
    python model_roberta/run_bagging.py
