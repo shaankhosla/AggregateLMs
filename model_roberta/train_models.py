@@ -13,6 +13,9 @@ from functools import partial
 from sklearn.model_selection import train_test_split
 from transformers import RobertaTokenizer, TrainingArguments, Trainer
 
+from datetime import datetime
+
+date = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
 
 parser = argparse.ArgumentParser(
     description="Train many models on randomly shuffled data, and save checkpoints"
@@ -131,7 +134,7 @@ def main():
         print("Training model now")
         trainer.train()
         
-        save_dir = os.path.join(args.save_dir,'roberta', str(i))
+        save_dir = os.path.join(args.save_dir,'roberta', task_name, date, str(i)) 
         
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
