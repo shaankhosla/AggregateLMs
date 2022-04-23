@@ -92,7 +92,7 @@ if task_name != 'MultiRC':
     )
 else:
     train_df = data_utils.process_multirc_jsonl(f"{args.data_dir}/train.jsonl", " ")
-    val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,)
+    val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,random_state=42)
 
 
 tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
