@@ -42,7 +42,8 @@ def model_init(task_name):
         'CB': {'num_labels': 3},
         'RTE': {},
         'BoolQ': {},
-        'MultiRC': {}
+        'MultiRC': {},
+        'COPA': {}
     }
 
 
