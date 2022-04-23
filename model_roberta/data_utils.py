@@ -58,7 +58,10 @@ def encode_data(dataset, tokenizer, task_name, max_seq_length=512):
       'RTE': {'seq1': ['premise'],'seq2':['hypothesis'], 'max_seq_length': 256},
       'BoolQ': {'seq1': ['question'],'seq2':['passage'], 'max_seq_length': 256},
       'MultiRC': {'seq1': ['passage'],'seq2':['question_answer_concat'], 'max_seq_length': 256},
+      'COPA': {'seq1': ['premise','choice1'],'seq2':['premise','choice2'], 'max_seq_length': 256},
     }
+
+    # Code to concatenate the columns listed in above dict (if there are multiple)
 
     seq1_parts = [dataset[col] for col in task_to_encode_config[task_name]['seq1']]
     seq2_parts = [dataset[col] for col in task_to_encode_config[task_name]['seq2']]
@@ -68,13 +71,16 @@ def encode_data(dataset, tokenizer, task_name, max_seq_length=512):
 
     for idx, part in enumerate(seq1_parts):
       if idx != 0:
-        seq1 = seq1 + " "
+        seq1 = seq1 + " <s> "
       seq1 = seq1 + part
     
     for idx, part in enumerate(seq2_parts):
       if idx != 0:
-        seq2 = seq2 + " "
+        seq2 = seq2 + " <s> "
       seq2 = seq2 + part
+
+    # print(seq1[0])
+    # print(seq2[0])
 
     encoded_input = tokenizer(seq1.to_list(), seq2.to_list(), return_tensors='pt', truncation=True, padding='max_length', max_length=task_to_encode_config[task_name]['max_seq_length'], return_attention_mask=True)\
 
@@ -99,7 +105,8 @@ def extract_labels(dataset, task_name):
       'CB': {'neutral':0,'entailment':1,'contradiction':2},
       'RTE': {'entailment':0,'not_entailment':1},
       'BoolQ': {'False':0,'True':1},
-      'MultiRC': {}
+      'MultiRC': {},
+      'COPA': {}
     }
 
     return dataset['label'].astype('str').replace(task_to_labels[task_name]).to_numpy().astype(int)

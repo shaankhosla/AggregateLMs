@@ -9,6 +9,7 @@ import json
 import pandas as pd
 import os
 from functools import partial
+import time
 
 from sklearn.model_selection import train_test_split
 from transformers import RobertaTokenizer, TrainingArguments, Trainer
@@ -16,7 +17,7 @@ from ray.tune.suggest.bayesopt import BayesOptSearch
 from ray import tune
 import ray
 
-ray.init(num_gpus=1)
+ray.init() #num_gpus=2 - technically don't need to specify here according to documentation
 
 parser = argparse.ArgumentParser(
     description="Run a hyperparameter search for finetuning a RoBERTa model on the CB dataset."
@@ -63,21 +64,9 @@ train_data = dataset.CBDataset(train_df, tokenizer, task_name)
 val_data = dataset.CBDataset(val_df, tokenizer, task_name)
 test_data = dataset.CBDataset(test_df, tokenizer, task_name)
 
-## TODO: Initialize a transformers.TrainingArguments object here for use in
-## training and tuning the model. Consult the assignment handout for some
-## sample hyperparameter values.
+# print(train_data[0])
+# print(train_data[1])
 
-## TODO: Initialize a transformers.Trainer object and run a Bayesian
-## hyperparameter search for at least 5 trials (but not too many) on the 
-## learning rate. Hint: use the model_init() and
-## compute_metrics() methods from finetuning_utils.py as arguments to
-## Trainer(). Use the hp_space parameter in hyperparameter_search() to specify
-## your hyperparameter search space. (Note that this parameter takes a function
-## as its value.)
-## Also print out the run ID, objective value,
-## and hyperparameters of your best run.
-
-### NEED TO LOOK AT THIS AND NOT SURE WHERE LOGGING AND MODEL CHECKPOINTS AND ALL OF THAT GO TO BE HONEST.
 """training_args = TrainingArguments(
     output_dir="/scratch/pfi203/outputs/model_checkpoints",
     overwrite_output_dir=True,
@@ -117,6 +106,8 @@ def hp_space_call(trial):
             "weight_decay": tune.uniform(5e-3, 2e-1)}
 
 def main():
+    start = time.time()
+
     for num_train_epochs_ in [3,5,7]:
         for train_batch_size in [16, 32]:
             training_args = TrainingArguments(
@@ -139,7 +130,8 @@ def main():
             eval_method_dict = {'CB':"eval_f1",
                                 'MultiRC':'eval_f1',
                                 'BoolQ':'eval_accuracy',
-                                'RTE':'eval_accuracy'}
+                                'RTE':'eval_accuracy',
+                                'COPA':'eval_accuracy'}
             
             trainer = Trainer(
                 args=training_args,
@@ -164,6 +156,7 @@ def main():
             print("----------------------------------------------------------------------------------")
             print("----------------------------------------------------------------------------------")
             print("----------------------------------------------------------------------------------")
+            print(f'hyperparameter search complete, elapsed: {time.time() - start}')
 
 if __name__ == "__main__":
     main()
