@@ -16,7 +16,7 @@ sbatch <<EOT
 #SBATCH --error=slurm_logs/"$3"/"$2"/%j_%x.err
 #SBATCH --export=ALL
 #SBATCH --time=02:00:00
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:2
 #SBATCH --mem=40G
 #SBATCH -c 2
 
