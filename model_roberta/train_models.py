@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 from transformers import RobertaTokenizer, TrainingArguments, Trainer
 
 from datetime import datetime
+import time
 
 date = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
 
@@ -103,6 +104,8 @@ test_data = dataset.CBDataset(test_df, tokenizer, task_name)
 
 def main():
 
+    start = time.time()
+
     for i in range(args.num_models):
         
         random_shuffle_train_df = train_df.sample(replace=True, frac=1, random_state=i)
@@ -142,6 +145,8 @@ def main():
         print(f"Done training model, saving model in {save_dir}")
 
         trainer.save_model(output_dir=save_dir)
+    
+    print(f'model bagging complete, elapsed: {time.time() - start}')
 
 
 if __name__ == "__main__":
