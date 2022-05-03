@@ -1,7 +1,5 @@
-"""Run a hyperparameter search on a RoBERTa model fine-tuned on CB.
+"""Run a hyperparameter search on a DistilRoBERTa model fine-tuned on a SuperGLUE task.
 
-Example usage:
-    python run_hyperparameter_search.py tmp/RTE
 """
 import argparse
 import dataset
@@ -14,23 +12,22 @@ from functools import partial
 import time
 
 from sklearn.model_selection import train_test_split
-from transformers import GPT2TokenizerFast, TrainingArguments, Trainer
+from transformers import AutoTokenizer, TrainingArguments, Trainer
 from ray.tune.suggest.bayesopt import BayesOptSearch
 from ray import tune
 import ray
 
-ray.init()
+ray.init() #num_gpus=2 - technically don't need to specify here according to documentation
 
 parser = argparse.ArgumentParser(
-    description="Run a hyperparameter search for finetuning a RoBERTa model on the CB dataset."
+    description="Run a hyperparameter search for finetuning a DistilRoBERTa model on the CB dataset."
 )
 parser.add_argument(
     "-d",
     "--data_dir",
     type=str,
-    help="Directory containing the CB dataset. Can be downloaded from SuperGLUE resources",
+    help="Directory containing the relevant SuperGLUE dataset.",
 )
-
 parser.add_argument(
     "-o",
     "--output_dir",
@@ -53,9 +50,9 @@ print("Data is in: ", args.data_dir)
 
 
 task_name = os.path.basename(args.data_dir)
-full_output_dir = f"{args.output_dir}/{args.model_name}/{task_name}"
 
-print("Fine-tuning for task: ", task_name, args.model_name)
+
+print("Fine-tuning for task: ", task_name)
 
 if task_name != 'MultiRC':
     train_df = pd.read_json(f"{args.data_dir}/train.jsonl", lines=True, orient="records")
@@ -68,12 +65,48 @@ else:
     train_df = data_utils.process_multirc_jsonl(f"{args.data_dir}/train.jsonl", " ")
     val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,random_state=42)
 
-tokenizer = GPT2TokenizerFast.from_pretrained(args.model_name)
-tokenizer.pad_token = tokenizer.eos_token
-train_data = dataset.GeneralDataset(train_df, tokenizer, task_name)
-val_data = dataset.GeneralDataset(val_df, tokenizer, task_name)
-test_data = dataset.GeneralDataset(test_df, tokenizer, task_name)
 
+tokenizer = AutoTokenizer.from_pretrained("distilroberta-base")
+train_data = dataset.CBDataset(train_df, tokenizer, task_name)
+val_data = dataset.CBDataset(val_df, tokenizer, task_name)
+test_data = dataset.CBDataset(test_df, tokenizer, task_name)
+
+# print(train_data[0])
+# print(train_data[1])
+
+"""training_args = TrainingArguments(
+    output_dir="/scratch/pfi203/outputs/model_checkpoints",
+    overwrite_output_dir=True,
+    do_train=True,
+    do_eval=True,
+    #per_gpu_train_batch_size=8,
+    per_gpu_eval_batch_size=64,
+    #num_train_epochs=3, # due to time/computation constraints
+    logging_steps=500,
+    logging_first_step=True,
+    save_strategy="epoch",
+    evaluation_strategy = "epoch", # evaluate at the end of every epoch
+    #weight_decay=0.01,
+    disable_tqdm=True
+)
+
+
+model_init_for_task = partial(finetuning_utils.model_init, task_name)
+
+### LOOKED AT THESE ARGUMENTS AND IT LOOKED GOOD: I DID put in the compute metrics, model init, and put in the right training and val data
+trainer = Trainer(
+    args=training_args,
+    train_dataset=train_data,
+    eval_dataset=val_data,
+    tokenizer=tokenizer,
+    model_init=model_init_for_task,
+    compute_metrics=finetuning_utils.compute_metrics
+)"""
+
+    
+    # Choose among schedulers:
+    # https://docs.ray.io/en/latest/tune/api_docs/schedulers.html
+    #scheduler=ASHAScheduler(metric="objective", mode="max"))
 def hp_space_call(trial):
     
     return {"learning_rate": tune.uniform(1e-5, 5e-5),
@@ -82,11 +115,11 @@ def hp_space_call(trial):
 def main():
     start = time.time()
 
-    for num_train_epochs_ in [2]:
+    for num_train_epochs_ in [9,11]:
         for train_batch_size in [16, 32]:
             training_args = TrainingArguments(
-                output_dir=full_output_dir,
-                overwrite_output_dir=False,
+                output_dir=args.output_dir,
+                overwrite_output_dir=True,
                 do_train=True,
                 do_eval=True,
                 per_gpu_train_batch_size=train_batch_size,
@@ -100,7 +133,7 @@ def main():
                 disable_tqdm=True)
 
 
-            model_init_for_task = partial(finetuning_utils.model_init, task_name, args.model_name)
+            model_init_for_task = partial(finetuning_utils.model_init, task_name)
             eval_method_dict = {'CB':"eval_f1",
                                 'MultiRC':'eval_f1',
                                 'BoolQ':'eval_accuracy',
@@ -121,12 +154,12 @@ def main():
             direction="maximize",
             backend="ray",
             search_alg=BayesOptSearch(mode="max"),
-            n_trials=3,
+            n_trials=5,
             compute_objective=lambda x: x[eval_method_dict[task_name]]
             )
             print("After hyperparam search, best run below:")
             print(best_trial)
-            print(f"num train epochs: {num_train_epochs_}. train batch size: {train_batch_size}")
+            print(f"num train epochs: {num_train_epochs_}. train batch  size: {train_batch_size}")
             print("----------------------------------------------------------------------------------")
             print("----------------------------------------------------------------------------------")
             print("----------------------------------------------------------------------------------")

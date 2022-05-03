@@ -1,4 +1,4 @@
-"""Run a hyperparameter search on a RoBERTa model fine-tuned on a SuperGLUE task.
+"""Run a hyperparameter search on a DistilRoBERTa model fine-tuned on a SuperGLUE task.
 
 """
 import argparse
@@ -11,7 +11,7 @@ import os
 from functools import partial
 
 from sklearn.model_selection import train_test_split
-from transformers import RobertaTokenizer, TrainingArguments, Trainer
+from transformers import AutoTokenizer, TrainingArguments, Trainer
 
 from datetime import datetime
 import time
@@ -96,7 +96,7 @@ else:
     val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,random_state=42)
 
 
-tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+tokenizer = AutoTokenizer.from_pretrained("distilroberta-base")
 
 val_data = dataset.CBDataset(val_df, tokenizer, task_name)
 test_data = dataset.CBDataset(test_df, tokenizer, task_name)
@@ -137,7 +137,7 @@ def main():
         print("Training model now")
         trainer.train()
         
-        save_dir = os.path.join(args.save_dir,'roberta', task_name, date, str(i)) 
+        save_dir = os.path.join(args.save_dir,'distilroberta', task_name, date, str(i)) 
         
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)

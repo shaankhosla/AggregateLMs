@@ -4,9 +4,9 @@ import torch
 from torch.utils.data import Dataset
 
 
-class CBDataset(Dataset):
+class GeneralDataset(Dataset):
     """
-    A torch.utils.data.Dataset wrapper for the BoolQ dataset.
+    A torch.utils.data.Dataset wrapper for any of the superglue tasks
     """
 
     def __init__(self, dataframe, tokenizer, task_name, max_seq_length=512):
@@ -18,10 +18,9 @@ class CBDataset(Dataset):
           max_seq_length: Maximum sequence length to either pad or truncate every
             input example to.
         """
-        ## TODO: Use encode_data() from data_utils to store the input IDs and 
-        ## attention masks for the data.
+
         self.encoded_data = data_utils.encode_data(dataframe, tokenizer, task_name, max_seq_length)
-        ## TODO: Use extract_labels() from data_utils to store the labels.
+
         self.label_list = data_utils.extract_labels(dataframe, task_name)
 
     def __len__(self):
@@ -34,9 +33,7 @@ class CBDataset(Dataset):
             label for the i-th example, with the values being numeric tensors
             and the keys being 'input_ids', 'attention_mask', and 'labels'.
         """
-        ## TODO: Return the i-th example as a dictionary with the keys and values
-        ## specified in the function docstring. You should be able to extract the
-        ## necessary values from self.encoded_data and self.label_list.
+
         item = {"input_ids": self.encoded_data[0][i],
                "attention_mask": self.encoded_data[1][i],
                "labels": self.label_list[i]
