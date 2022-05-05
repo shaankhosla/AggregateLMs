@@ -10,12 +10,12 @@ import os
 from functools import partial
 
 from sklearn.model_selection import train_test_split
-from transformers import RobertaTokenizer, TrainingArguments, Trainer
+from transformers import GPT2TokenizerFast, TrainingArguments, Trainer
 
 from datetime import datetime
 import time
 
-date = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
+date = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
 
 parser = argparse.ArgumentParser(
     description="Train many models on randomly shuffled data, and save checkpoints"
@@ -73,6 +73,13 @@ parser.add_argument(
     help="Number of models to train",
 )
 
+parser.add_argument(
+    "-m",
+    "--model_name",
+    type=str,
+    help="Model name / path that huggingface will recognize in the from_pretrained() function",
+)
+
 args = parser.parse_args()
 
 # Since the labels for the test set have not been released, we will use half of the
@@ -95,40 +102,67 @@ else:
     val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,random_state=42)
 
 
-tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+tokenizer = GPT2TokenizerFast.from_pretrained(args.model_name)
+tokenizer.pad_token = tokenizer.eos_token
 
-val_data = dataset.CBDataset(val_df, tokenizer, task_name)
-test_data = dataset.CBDataset(test_df, tokenizer, task_name)
+val_data = dataset.GeneralDataset(val_df, tokenizer, task_name)
+test_data = dataset.GeneralDataset(test_df, tokenizer, task_name)
+
 
 
 def main():
-
     start = time.time()
+    print("Training baseline non-shuffled model")
+    
+    gradient_accumulation_steps_ = 8
+    gradient_checkpoint_bool = (args.model_name == 'gpt2-large') or (args.model_name == 'gpt2-xl')
 
-    for i in range(args.num_models):
+    print(f'Baseline single LM trained time elapsed: {time.time() - start}')
+
+    for i in range(args.num_models + 1):
         
-        random_shuffle_train_df = train_df.sample(replace=True, frac=1, random_state=i)
-        train_data = dataset.CBDataset(random_shuffle_train_df, tokenizer, task_name)
+        if i < args.num_models:
+            
+            ## Bootstrapped models 
+            random_shuffle_train_df = train_df.sample(replace=True, frac=1, random_state=i)
+            train_data = dataset.GeneralDataset(random_shuffle_train_df, tokenizer, task_name)
+            model_type = 'bootstrapped'
+        else:
+
+            ## Baseline single LM (the last iteration)
+            train_data = dataset.GeneralDataset(train_df, tokenizer, task_name)
+            model_type = 'baselineLM'
         
+        model_id = model_type + str(i)
+        full_output_dir = os.path.join(args.output_dir, args.model_name, task_name, model_id, date)
+
+        if not os.path.isdir(full_output_dir):
+            os.makedirs(full_output_dir)
+
         training_args = TrainingArguments(
-            output_dir=args.output_dir,
-            overwrite_output_dir=True,
+            output_dir=full_output_dir,
+            overwrite_output_dir=False,
             do_train=True,
-            do_eval=False,
+            do_eval=True,
             per_device_train_batch_size=args.training_batch_size,
+            per_device_eval_batch_size=2,
             num_train_epochs=args.epochs, # due to time/computation constraints
-            logging_strategy="no",
-            save_strategy="no",
+            logging_strategy="epoch",
+            save_strategy="epoch",
+            evaluation_strategy="epoch",
             weight_decay=args.weight_decay,
             learning_rate=args.learning_rate,
+            gradient_accumulation_steps=gradient_accumulation_steps_,
+            gradient_checkpointing=gradient_checkpoint_bool,
             disable_tqdm=True)
 
 
-        model_init_for_task = partial(finetuning_utils.model_init, task_name)
+        model_init_for_task = partial(finetuning_utils.model_init, task_name, args.model_name)
         
         trainer = Trainer(
             args=training_args,
             train_dataset=train_data,
+            eval_dataset=test_data,
             tokenizer=tokenizer,
             model_init=model_init_for_task,
         )
@@ -136,7 +170,9 @@ def main():
         print("Training model now")
         trainer.train()
         
-        save_dir = os.path.join(args.save_dir,'roberta', task_name, date, str(i)) 
+        
+
+        save_dir = os.path.join(args.save_dir, args.model_name, task_name, model_id, date)
         
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
@@ -145,7 +181,7 @@ def main():
 
         trainer.save_model(output_dir=save_dir)
     
-    print(f'model bagging complete, elapsed: {time.time() - start}')
+    print(f'Baseline {args.model_name} trained and {args.num_models} bootstrapped models trained. Elapsed time: {time.time() - start}')
 
 
 if __name__ == "__main__":
