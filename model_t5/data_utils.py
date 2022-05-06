@@ -109,7 +109,7 @@ def encode_data(dataset, tokenizer, task_name, max_seq_length=512):
     return torch.tensor(input_ids), torch.tensor(attention_mask)
 
 
-def extract_labels(dataset, task_name):
+def extract_labels(tokenizer, dataset, task_name):
     """Converts labels into numerical labels.
 
     Args:
@@ -120,19 +120,40 @@ def extract_labels(dataset, task_name):
         where 0 is False and 1 is True.
     """
     ## TODO: Convert the labels to a numeric format and return as a list.
-
-    task_to_labels = {
-        "CB": {"neutral": 0, "entailment": 1, "contradiction": 2},
-        "RTE": {"entailment": 0, "not_entailment": 1},
-        "BoolQ": {"False": 0, "True": 1},
-        "MultiRC": {},
-        "COPA": {},
+    task_to_encode_config = {
+        "CB": {"seq1": ["premise"], "seq2": ["hypothesis"], "max_seq_length": 256},
+        "RTE": {"seq1": ["premise"], "seq2": ["hypothesis"], "max_seq_length": 256},
+        "BoolQ": {"seq1": ["question"], "seq2": ["passage"], "max_seq_length": 256},
+        "MultiRC": {
+            "seq1": ["passage"],
+            "seq2": ["question_answer_concat"],
+            "max_seq_length": 256,
+        },
+        "COPA": {
+            "seq1": ["premise", "choice1"],
+            "seq2": ["premise", "choice2"],
+            "max_seq_length": 256,
+        },
     }
 
-    return (
-        dataset["label"]
-        .astype("str")
-        .replace(task_to_labels[task_name])
-        .to_numpy()
-        .astype(int)
+    
+    
+    encoded_input = tokenizer(
+        [str(x) for x in dataset["label"].values.tolist()],
+        return_tensors="pt",
+        truncation=True,
+        padding="max_length",
+        max_length=task_to_encode_config[task_name]["max_seq_length"],
+        return_attention_mask=True,
     )
+    input_ids = encoded_input["input_ids"]
+    attention_mask = encoded_input["attention_mask"]
+
+    return torch.tensor(input_ids), torch.tensor(attention_mask)
+
+
+def decode(tokenizer, outs):
+    answers = []
+    outs = [tokenizer.decode(x) for x in outs]
+    answers.extend(outs)
+    return answers

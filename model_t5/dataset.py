@@ -23,7 +23,7 @@ class CBDataset(Dataset):
             dataframe, tokenizer, task_name, max_seq_length
         )
         ## TODO: Use extract_labels() from data_utils to store the labels.
-        self.label_list = data_utils.extract_labels(dataframe, task_name)
+        self.label_list = data_utils.extract_labels(tokenizer, dataframe, task_name)
 
     def __len__(self):
         return len(self.label_list)
@@ -41,6 +41,7 @@ class CBDataset(Dataset):
         item = {
             "input_ids": self.encoded_data[0][i],
             "attention_mask": self.encoded_data[1][i],
-            "labels": self.label_list[i],
+            "labels": self.label_list[0][i],
+            "decoder_attention_mask": self.label_list[1][i]
         }
         return item

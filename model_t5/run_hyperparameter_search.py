@@ -71,38 +71,9 @@ test_data = dataset.CBDataset(test_df, tokenizer, task_name)
 # print(train_data[0])
 # print(train_data[1])
 
-"""training_args = TrainingArguments(
-    output_dir="/scratch/pfi203/outputs/model_checkpoints",
-    overwrite_output_dir=True,
-    do_train=True,
-    do_eval=True,
-    #per_gpu_train_batch_size=8,
-    per_gpu_eval_batch_size=64,
-    #num_train_epochs=3, # due to time/computation constraints
-    logging_steps=500,
-    logging_first_step=True,
-    save_strategy="epoch",
-    evaluation_strategy = "epoch", # evaluate at the end of every epoch
-    #weight_decay=0.01,
-    disable_tqdm=True
-)
-
-
-model_init_for_task = partial(finetuning_utils.model_init, task_name)
-
-### LOOKED AT THESE ARGUMENTS AND IT LOOKED GOOD: I DID put in the compute metrics, model init, and put in the right training and val data
-trainer = Trainer(
-    args=training_args,
-    train_dataset=train_data,
-    eval_dataset=val_data,
-    tokenizer=tokenizer,
-    model_init=model_init_for_task,
-    compute_metrics=finetuning_utils.compute_metrics
-)"""
-
 
 training_args = TrainingArguments(
-    output_dir="/scratch/sk8520/outputs/model_checkpoints",
+    output_dir="/scratch/sk8520/AggregateLMs/outputs/",
     overwrite_output_dir=True,
     do_train=True,
     do_eval=True,
