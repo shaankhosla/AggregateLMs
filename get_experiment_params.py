@@ -17,6 +17,7 @@ def get_experiment_configurations(config_number, task_name):
     pruning_factors = experiment_table['Pruning Factor'].to_list()
     #all_model_paths = [[] for _ in range(len(num_models_per_type))]
     all_model_paths = []
+    all_pruning_factors = []
     
     for idx, (model_path, num_models) in enumerate(zip(template_model_paths, num_models_per_type)):
         asterisk_position = model_path.find("*")
@@ -51,4 +52,6 @@ def get_experiment_configurations(config_number, task_name):
                 #all_model_paths[idx].append("".join(model_path_as_list))
                 all_model_paths.append("".join(model_path_as_list))
         
-    return all_model_paths, num_models_per_type, pruning_factors
+        all_pruning_factors.extend([pruning_factors[idx] for _ in range(num_models)])
+        
+    return all_model_paths, all_pruning_factors
