@@ -5,15 +5,17 @@ from collections import defaultdict
 from functools import partial
 from functools import reduce
 from lib2to3.pgen2.tokenize import tokenize
-import numpy as np
 
-from model_roberta import data_utils
+import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import classification_report
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
 from torch.nn.utils import prune
+from transformers import AutoConfig
+from transformers import AutoModelForSequenceClassification
+from transformers import AutoTokenizer
 from transformers import GPT2ForSequenceClassification
 from transformers import GPT2Tokenizer
 from transformers import RobertaForSequenceClassification
@@ -22,10 +24,11 @@ from transformers import Trainer
 from transformers import TrainingArguments
 from yaml import load
 
-from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
+from get_experiment_params import get_experiment_configurations
+from model_roberta import data_utils
 
 
-def load_models(model_dir):
+def load_models(model_dir, models_per_type):
     models, tokenizers = [], []
 
     for i, path in enumerate(model_dir):
@@ -34,12 +37,13 @@ def load_models(model_dir):
             path, problem_type="multi_label_classification"
         )
         tokenizer = AutoTokenizer.from_pretrained(path)
-#         tokenizer = RobertaTokenizer.from_pretrained(path)
+        #         tokenizer = RobertaTokenizer.from_pretrained(path)
         print("type of model: - " + str(type(model)))
-        
-        
-        models.append(model)
-        tokenizers.append(tokenizer)
+
+        num_models = models_per_type[i]
+        for _ in range(num_models):
+            models.append(model)
+            tokenizers.append(tokenizer)
     return models, tokenizers
 
 
@@ -56,10 +60,11 @@ def count_nonzero(model):
     return sum(torch.count_nonzero(p) for p in model.parameters() if p.requires_grad)
 
 
-def prune_models(models):
+def prune_models(models, pruning_factors):
+    assert len(models) == len(pruning_factors)
+
     new_models = []
-    prune_factor = 1 - (1 / len(models))
-    for model in models:
+    for i, model in enumerate(models):
         print(count_parameters(model), count_nonzero(model))
         module_tups = []
         for layer in list(model.state_dict().keys()):
@@ -70,7 +75,7 @@ def prune_models(models):
         prune.global_unstructured(
             parameters=module_tups,
             pruning_method=prune.L1Unstructured,
-            amount=prune_factor,
+            amount=pruning_factors[i],
         )
 
         for module, _ in module_tups:
@@ -79,8 +84,6 @@ def prune_models(models):
         print(count_parameters(model), count_nonzero(model))
     print("models pruned!")
     return new_models
-
-
 
 
 def run_evaluation(models, tokenizers, task_name, test_df):
@@ -120,39 +123,46 @@ def run_evaluation(models, tokenizers, task_name, test_df):
     ), precision_recall_fscore_support(y_true, y_preds, average=average_strategy)
 
 
-
-
 def main():
     ### these will become args
     TASK = "BoolQ"
-#     MODEL_PATHS = ["/scratch/sk8520/AggregateLMs/models/CB/0/", "/scratch/sk8520/AggregateLMs/models/CB/1/"]
-    MODEL_PATHS = ['/scratch/ms12768/outputs_deberta_base/outputs_10_BoolQ/saved_models/deberta/BoolQ/2022_05_03-02:47:06_AM/0/', "/scratch/ms12768/outputs_deberta_base/outputs_10_BoolQ/saved_models/deberta/BoolQ/2022_05_03-02:47:06_AM/1/"]
+    #     MODEL_PATHS = ["/scratch/sk8520/AggregateLMs/models/CB/0/", "/scratch/sk8520/AggregateLMs/models/CB/1/"]
+    MODEL_PATHS = [
+        "/scratch/ms12768/outputs_deberta_base/outputs_10_BoolQ/saved_models/deberta/BoolQ/2022_05_03-02:47:06_AM/0/",
+        "/scratch/ms12768/outputs_deberta_base/outputs_10_BoolQ/saved_models/deberta/BoolQ/2022_05_03-02:47:06_AM/1/",
+    ]
     PRUNE = False
-    #### hard code for now
-    
-    
-    
+
+    (
+        MODEL_PATHS,
+        NUM_MODELS_PER_TYPE,
+        NESTED_PRUNING_FACTORS,
+    ) = get_experiment_configurations(1)
+
+    PRUNING_FACTORS = []
+    for i, num_models in enumerate(NUM_MODELS_PER_TYPE):
+        for _ in range(num_models):
+            PRUNING_FACTORS.append(NESTED_PRUNING_FACTORS[i])
+
+    ###############
+
     print("Evaluating", TASK)
     if TASK != "MultiRC":
-        test_df = pd.read_json(
-            f"./data/{TASK}/val.jsonl", lines=True, orient="records"
-        )
+        test_df = pd.read_json(f"./data/{TASK}/val.jsonl", lines=True, orient="records")
     else:
-        test_df = data_utils.process_multirc_jsonl(
-            f"./data/{TASK}/val.jsonl", " "
-        )
+        test_df = data_utils.process_multirc_jsonl(f"./data/{TASK}/val.jsonl", " ")
 
+    _, test_df = train_test_split(test_df, test_size=0.5, random_state=42)
 
-    models, tokenizers = load_models(MODEL_PATHS)
+    models, tokenizers = load_models(MODEL_PATHS, NUM_MODELS_PER_TYPE)
     print(len(models), "models")
 
     if PRUNE:
-        models = prune_models(models)
+        models = prune_models(models, PRUNING_FACTORS)
+
     report, scores = run_evaluation(models, tokenizers, TASK, test_df)
     print(report, scores)
 
 
-
 if __name__ == "__main__":
     main()
-
