@@ -15,13 +15,21 @@ def get_experiment_configurations(config_number, task_name):
     template_model_paths = experiment_table['Path'].to_list()
     num_models_per_type = experiment_table['Number of Models'].astype(int).to_list()
     pruning_factors = experiment_table['Pruning Factor'].to_list()
+    is_baseline = experiment_table['Is Baseline'].to_list()
+    model_types = experiment_table['Model Type'].to_list()
     #all_model_paths = [[] for _ in range(len(num_models_per_type))]
     all_model_paths = []
     all_pruning_factors = []
     
-    for idx, (model_path, num_models) in enumerate(zip(template_model_paths, num_models_per_type)):
+    for idx, (model_path, num_models, baseline_bool) in enumerate(zip(template_model_paths, num_models_per_type, is_baseline)):
         asterisk_position = model_path.find("*")
-        assert asterisk_position != -1
+        #if "baseline" not in model_path and "checkpoint":
+        if not baseline_bool:
+            assert asterisk_position != -1
+            print(f"Assembling ensemble of bootstrapped models for {task_name}")
+            print(f"Ensemble consists of {list(zip(model_types, num_models_per_type))}")
+        else:
+            print(f"Running baseline model for {task_name}, in path {model_path}")
         model_path_as_list = list(model_path)
         
         if num_models < 10:
