@@ -28,6 +28,9 @@ from get_experiment_params import get_experiment_configurations
 from model_roberta import data_utils
 from tqdm import tqdm
 import csv
+import datetime
+experiment_table_csv_link = "https://docs.google.com/spreadsheets/d/1nVZOPeP8s_zMcnDBw9QRAu_UI3jdbICFpolVc4rwT9A/export?format=csv&id=1nVZOPeP8s_zMcnDBw9QRAu_UI3jdbICFpolVc4rwT9A&gid=818501719"
+
 
 
 
@@ -72,10 +75,11 @@ def count_nonzero(model):
 
 def prune_models(models, pruning_factors):
     assert len(models) == len(pruning_factors)
-
+    
+    print('PRUNING!!')
     new_models = []
     for i, model in enumerate(models):
-        print(count_parameters(model), count_nonzero(model))
+        print('Count of parameters and nonzero pre prune',count_parameters(model), count_nonzero(model))
         module_tups = []
         for layer in list(model.state_dict().keys()):
             if ".weight" not in layer:
@@ -91,8 +95,8 @@ def prune_models(models, pruning_factors):
         for module, _ in module_tups:
             prune.remove(module, "weight")
         new_models.append(model)
-        print(count_parameters(model), count_nonzero(model))
-    print("models pruned!")
+        print('Count of parameters and nonzero post prune', count_parameters(model), count_nonzero(model))
+    print("models pruned!\n")
     return new_models
 
 
@@ -100,7 +104,7 @@ def run_evaluation(models, tokenizers, task_name, test_df):
     y_preds = []
     y_true = data_utils.extract_labels(test_df, task_name)
 
-    for i in tqdm(range(len(y_true))):
+    for i in range(len(y_true)):
         votingDict = defaultdict(int)
         summed_probs = []
         for i, model in enumerate(models):
@@ -122,25 +126,20 @@ def run_evaluation(models, tokenizers, task_name, test_df):
         y_preds.append(predicted_class_id)
 
         
-    if task_name == 'CB':  # more than two classes
-        average_strategy = "macro"
-    else:
-        average_strategy = "binary"
+#     if task_name == 'CB':  # more than two classes
+#         average_strategy = "macro"
+#     else:
+#         average_strategy = "binary"
 
     return classification_report(y_true, y_preds, output_dict=True) 
 
 
-def main():
-    ### these will become args
-    TASK = "BoolQ"
-    PRUNE = False
-    config_number = 17
+def main(TIME, config_number, TASK):
     MODEL_PATHS, PRUNING_FACTORS = get_experiment_configurations(config_number, TASK)
-    
 
-    f = open('validation_report.csv', 'w')
+    f = open(f'validation_report_{TIME}.csv', 'a')
     writer = csv.writer(f)
-    writer.writerow(['config', 'accuracy', 'macro_f1'])
+    
     ###############
     
     print(MODEL_PATHS)
@@ -154,20 +153,46 @@ def main():
 
     _, test_df = train_test_split(test_df, test_size=0.5, random_state=42)
     
+    
+    
+    test_df = test_df.sample(10) ###### DELETE #######
+    
     models, tokenizers = load_models(MODEL_PATHS)
     print(len(models), "models")
 
-    if PRUNE:
-        models = prune_models(models, PRUNING_FACTORS)
+ 
+    models = prune_models(models, PRUNING_FACTORS)
 
     report = run_evaluation(models, tokenizers, TASK, test_df)
     accuracy = report['accuracy']
     macro_f1 = report['macro avg']['f1-score']
     
-    row = [config_number, accuracy, macro_f1]
+    row = [config_number, TASK, accuracy, macro_f1]
     writer.writerow(row)
     f.close()
     
 
 if __name__ == "__main__":
-    main()
+    
+    TIME = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    f = open(f'validation_report_{TIME}.csv', 'w')
+    writer = csv.writer(f)
+    writer.writerow(['config', 'task', 'accuracy', 'macro_f1'])
+    f.close()
+    
+    
+    experiment_table = pd.read_csv(experiment_table_csv_link).iloc[:,:8].dropna()
+    config_numbers = experiment_table['Configuration Num'].unique().astype(int)
+    
+    for config_number in tqdm(config_numbers):
+        print('Config number', config_number)
+        for TASK in ['CB', "BoolQ", "RTE"]:
+            print('Task', TASK)
+            try:
+                main(TIME, config_number, TASK)
+            except:
+                print(config_number, TASK)
+                continue
+            print('\n\n')
+        print('\n\n\n\n')
