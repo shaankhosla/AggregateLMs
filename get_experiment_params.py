@@ -31,7 +31,7 @@ def get_experiment_configurations(config_number, task_name):
         asterisk_position = model_path.find("*")
         #if "baseline" not in model_path and "checkpoint":
         
-        if not baseline_bool:
+        if not int(baseline_bool):
             assert asterisk_position != -1
             print(f"Assembling ensemble of bootstrapped models for {task_name}, in modified path {model_path}\n")
         else:
