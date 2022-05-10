@@ -74,6 +74,13 @@ parser.add_argument(
     help="Number of models to train",
 )
 
+parser.add_argument(
+    "-m",
+    "--model_name",
+    type=str,
+    help="Model name / path that huggingface will recognize in the from_pretrained() function",
+)
+
 args = parser.parse_args()
 
 # Since the labels for the test set have not been released, we will use half of the
@@ -96,7 +103,7 @@ else:
     val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,random_state=42)
 
 
-tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+tokenizer = RobertaTokenizer.from_pretrained("roberta-large")
 
 val_data = dataset.CBDataset(val_df, tokenizer, task_name)
 test_data = dataset.CBDataset(test_df, tokenizer, task_name)
@@ -125,7 +132,7 @@ def main():
             disable_tqdm=True)
 
 
-        model_init_for_task = partial(finetuning_utils.model_init, task_name)
+        model_init_for_task = partial(finetuning_utils.model_init, task_name, args.model_name)
         
         trainer = Trainer(
             args=training_args,
@@ -137,7 +144,7 @@ def main():
         print("Training model now")
         trainer.train()
         
-        save_dir = os.path.join(args.save_dir,'roberta', task_name, date, str(i)) 
+        save_dir = os.path.join(args.save_dir, args.model_name, task_name, date, str(i)) 
         
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)

@@ -33,7 +33,7 @@ def compute_metrics(eval_pred):
 
 
 
-def model_init(task_name):
+def model_init(task_name, model_name):
     """Returns an initialized model for use in a Hugging Face Trainer."""
     ## TODO: Return a pretrained RoBERTa model for sequence classification.
     ## See https://huggingface.co/transformers/model_doc/roberta.html#robertaforsequenceclassification.
@@ -47,6 +47,6 @@ def model_init(task_name):
     }
 
 
-    model = RobertaForSequenceClassification.from_pretrained("roberta-base", **task_name_to_kwargs[task_name])
+    model = RobertaForSequenceClassification.from_pretrained(pretrained_model_name_or_path=model_name, **task_name_to_kwargs[task_name])
 
     return model

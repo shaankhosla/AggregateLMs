@@ -12,7 +12,7 @@ from functools import partial
 import time
 
 from sklearn.model_selection import train_test_split
-from transformers import RobertaTokenizer, TrainingArguments, Trainer
+from transformers import RobertaTokenizer, RobertaTokenizerFast, TrainingArguments, Trainer
 from ray.tune.suggest.bayesopt import BayesOptSearch
 from ray import tune
 import ray
@@ -33,6 +33,13 @@ parser.add_argument(
     "--output_dir",
     type=str,
     help="Directory containing the relevant SuperGLUE dataset.",
+)
+
+parser.add_argument(
+    "-m",
+    "--model_name",
+    type=str,
+    help="Model name / path that huggingface will recognize in the from_pretrained() function",
 )
 
 args = parser.parse_args()
@@ -59,7 +66,7 @@ else:
     val_df, test_df = train_test_split(data_utils.process_multirc_jsonl(f"{args.data_dir}/val.jsonl", " "), test_size=0.5,random_state=42)
 
 
-tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+tokenizer = RobertaTokenizerFast.from_pretrained(args.model_name)
 train_data = dataset.CBDataset(train_df, tokenizer, task_name)
 val_data = dataset.CBDataset(val_df, tokenizer, task_name)
 test_data = dataset.CBDataset(test_df, tokenizer, task_name)
@@ -108,8 +115,8 @@ def hp_space_call(trial):
 def main():
     start = time.time()
 
-    for num_train_epochs_ in [3,5,7]:
-        for train_batch_size in [16, 32]:
+    for num_train_epochs_ in [3,5]: #removing 7 temporarily bc 3/5 failed
+        for train_batch_size in [32, 16]:
             training_args = TrainingArguments(
                 output_dir=args.output_dir,
                 overwrite_output_dir=True,
@@ -123,10 +130,10 @@ def main():
                 save_strategy="epoch",
                 evaluation_strategy = "epoch", # evaluate at the end of every epoch
                 #weight_decay=0.01,
-                disable_tqdm=True)
+                disable_tqdm=False) #disable when evaluating how long job will take
 
 
-            model_init_for_task = partial(finetuning_utils.model_init, task_name)
+            model_init_for_task = partial(finetuning_utils.model_init, task_name, args.model_name)
             eval_method_dict = {'CB':"eval_f1",
                                 'MultiRC':'eval_f1',
                                 'BoolQ':'eval_accuracy',
