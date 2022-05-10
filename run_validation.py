@@ -26,9 +26,21 @@ from yaml import load
 
 from get_experiment_params import get_experiment_configurations
 from model_roberta import data_utils
+from tqdm import tqdm
+import csv
 
 
-def load_models(model_dir, models_per_type):
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device", DEVICE)
+
+
+def to_device(batch):
+    return {k: v.to(DEVICE) for k, v in batch.items()}
+
+
+
+def load_models(model_dir):
     models, tokenizers = [], []
 
     for i, path in enumerate(model_dir):
@@ -40,10 +52,8 @@ def load_models(model_dir, models_per_type):
         #         tokenizer = RobertaTokenizer.from_pretrained(path)
         print("type of model: - " + str(type(model)))
 
-        num_models = models_per_type[i]
-        for _ in range(num_models):
-            models.append(model)
-            tokenizers.append(tokenizer)
+        models.append(model.to(DEVICE))
+        tokenizers.append(tokenizer)
     return models, tokenizers
 
 
@@ -90,7 +100,7 @@ def run_evaluation(models, tokenizers, task_name, test_df):
     y_preds = []
     y_true = data_utils.extract_labels(test_df, task_name)
 
-    for i in range(len(y_true)):
+    for i in tqdm(range(len(y_true))):
         votingDict = defaultdict(int)
         summed_probs = []
         for i, model in enumerate(models):
@@ -100,9 +110,9 @@ def run_evaluation(models, tokenizers, task_name, test_df):
             )
             input_ids, attention_mask = tokenizedinput
             with torch.inference_mode():
-                logits = model(input_ids).logits
+                logits = model(input_ids.to(DEVICE)).logits
                 probs = torch.nn.functional.softmax(logits, dim=1)
-                summed_probs.append(np.array(probs[0]))
+                summed_probs.append(np.array(probs[0].to('cpu')))
 
             predicted_class_id = int(torch.argmax(logits, axis=-1)[0])
             votingDict[model.config.id2label[predicted_class_id]] += 1
@@ -111,41 +121,31 @@ def run_evaluation(models, tokenizers, task_name, test_df):
         predicted_class_id = int(np.argmax(y_pred, axis=-1))
         y_preds.append(predicted_class_id)
 
-    target_names = [str(x) for x in range(len(logits))]
-    print(target_names)
-    if len(logits) > 2:  # more than two classes
+        
+    if task_name == 'CB':  # more than two classes
         average_strategy = "macro"
     else:
         average_strategy = "binary"
 
-    return classification_report(
-        y_true, y_preds, target_names=target_names
-    ), precision_recall_fscore_support(y_true, y_preds, average=average_strategy)
+    return classification_report(y_true, y_preds, output_dict=True) 
 
 
 def main():
     ### these will become args
     TASK = "BoolQ"
-    #     MODEL_PATHS = ["/scratch/sk8520/AggregateLMs/models/CB/0/", "/scratch/sk8520/AggregateLMs/models/CB/1/"]
-    MODEL_PATHS = [
-        "/scratch/ms12768/outputs_deberta_base/outputs_10_BoolQ/saved_models/deberta/BoolQ/2022_05_03-02:47:06_AM/0/",
-        "/scratch/ms12768/outputs_deberta_base/outputs_10_BoolQ/saved_models/deberta/BoolQ/2022_05_03-02:47:06_AM/1/",
-    ]
     PRUNE = False
+    config_number = 17
+    MODEL_PATHS, PRUNING_FACTORS = get_experiment_configurations(config_number, TASK)
+    
 
-    (
-        MODEL_PATHS,
-        NUM_MODELS_PER_TYPE,
-        NESTED_PRUNING_FACTORS,
-    ) = get_experiment_configurations(1)
-
-    PRUNING_FACTORS = []
-    for i, num_models in enumerate(NUM_MODELS_PER_TYPE):
-        for _ in range(num_models):
-            PRUNING_FACTORS.append(NESTED_PRUNING_FACTORS[i])
-
+    f = open('validation_report.csv', 'w')
+    writer = csv.writer(f)
+    writer.writerow(['config', 'accuracy', 'macro_f1'])
     ###############
+    
+    print(MODEL_PATHS)
 
+    
     print("Evaluating", TASK)
     if TASK != "MultiRC":
         test_df = pd.read_json(f"./data/{TASK}/val.jsonl", lines=True, orient="records")
@@ -153,16 +153,21 @@ def main():
         test_df = data_utils.process_multirc_jsonl(f"./data/{TASK}/val.jsonl", " ")
 
     _, test_df = train_test_split(test_df, test_size=0.5, random_state=42)
-
-    models, tokenizers = load_models(MODEL_PATHS, NUM_MODELS_PER_TYPE)
+    
+    models, tokenizers = load_models(MODEL_PATHS)
     print(len(models), "models")
 
     if PRUNE:
         models = prune_models(models, PRUNING_FACTORS)
 
-    report, scores = run_evaluation(models, tokenizers, TASK, test_df)
-    print(report, scores)
-
+    report = run_evaluation(models, tokenizers, TASK, test_df)
+    accuracy = report['accuracy']
+    macro_f1 = report['macro avg']['f1-score']
+    
+    row = [config_number, accuracy, macro_f1]
+    writer.writerow(row)
+    f.close()
+    
 
 if __name__ == "__main__":
     main()

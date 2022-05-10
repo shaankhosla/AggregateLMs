@@ -11,7 +11,7 @@ def get_experiment_configurations(config_number, task_name):
     task_name is a string. Must be one of [RTE, CB, BoolQ].
     '''
     experiment_table = pd.read_csv(experiment_table_csv_link).iloc[:,:8].dropna() ## Ensures only filled in data comes through
-    experiment_table = experiment_table[(experiment_table['Configuration Num']==config_number) & (experiment_table['Task']==task_name)]
+    experiment_table = experiment_table[(experiment_table['Configuration Num'].astype(int)==config_number) & (experiment_table['Task']==task_name)]
     template_model_paths = experiment_table['Path'].to_list()
     num_models_per_type = experiment_table['Number of Models'].astype(int).to_list()
     pruning_factors = experiment_table['Pruning Factor'].to_list()
