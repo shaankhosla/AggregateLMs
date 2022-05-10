@@ -34,25 +34,28 @@ def get_experiment_configurations(config_number, task_name):
         if not int(baseline_bool):
             assert asterisk_position != -1
             print(f"Assembling ensemble of bootstrapped models for {task_name}, in modified path {model_path}\n")
+            
+            model_path_as_list = list(model_path)
+
+            bootstrap_model_nums = np.random.choice(range(0, max(10, num_models)), size=num_models, replace=False)
+
+            for bootstrap_model_num in bootstrap_model_nums:
+
+                model_path_as_list[asterisk_position] = str(bootstrap_model_num)
+
+                ## gpt2 and distilgpt2 have extra models in different paths. Manual fix.
+                if bootstrap_model_num >= 10:
+                    print("Manually fixing suffixes for gpt2 and distilgpt2 in specific experiments")
+                    model_path_as_list_modified = model_path_as_list[:-23]
+                    model_path_as_list_modified.extend(suffix_map[model_type][task_name])
+                    all_model_paths.append("".join(model_path_as_list_modified))
+                else:
+                    all_model_paths.append("".join(model_path_as_list))
+        
         else:
             print(f"Running baseline model for {task_name}, in path {model_path}\n")
-        model_path_as_list = list(model_path)
-        
-        bootstrap_model_nums = np.random.choice(range(0, max(10, num_models)), size=num_models, replace=False)
+            all_model_paths.append(model_path)
 
-        for bootstrap_model_num in bootstrap_model_nums:
-            
-            model_path_as_list[asterisk_position] = str(bootstrap_model_num)
-            
-            ## gpt2 and distilgpt2 have extra models in different paths. Manual fix.
-            if bootstrap_model_num >= 10:
-                print("Manually fixing suffixes for gpt2 and distilgpt2 in specific experiments")
-                model_path_as_list_modified = model_path_as_list[:-23]
-                model_path_as_list_modified.extend(suffix_map[model_type][task_name])
-                all_model_paths.append("".join(model_path_as_list_modified))
-            else:
-                all_model_paths.append("".join(model_path_as_list))
-        
         all_pruning_factors.extend([pruning_factors[idx] for _ in range(num_models)])
         
     return all_model_paths, all_pruning_factors
