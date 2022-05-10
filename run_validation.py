@@ -189,10 +189,8 @@ if __name__ == "__main__":
         print('Config number', config_number)
         for TASK in ['CB', "BoolQ", "RTE"]:
             print('Task', TASK)
-            try:
-                main(TIME, config_number, TASK)
-            except:
-                print(config_number, TASK)
-                continue
+            main(TIME, config_number, TASK)
+            
+            
             print('\n\n')
         print('\n\n\n\n')
