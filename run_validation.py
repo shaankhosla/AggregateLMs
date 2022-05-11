@@ -108,6 +108,7 @@ def run_evaluation(models, tokenizers, task_name, test_df):
         votingDict = defaultdict(int)
         summed_probs = []
         for i, model in enumerate(models):
+            print(type(model))
             tokenizer = tokenizers[i]
             tokenizedinput = data_utils.encode_data(
                 test_df[i : i + 1], tokenizer, task_name
@@ -189,8 +190,14 @@ if __name__ == "__main__":
         print('Config number', config_number)
         for TASK in ['CB', "BoolQ", "RTE"]:
             print('Task', TASK)
-            main(TIME, config_number, TASK)
-            
+            try:
+                main(TIME, config_number, TASK)
+            except Exception as e:
+                print('ERROR!!')
+                print(e)
+                print(config_number)
+                print(TASK)
+                continue
             
             print('\n\n')
         print('\n\n\n\n')
