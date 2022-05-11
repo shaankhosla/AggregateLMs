@@ -180,7 +180,7 @@ if __name__ == "__main__":
     experiment_table = pd.read_csv(experiment_table_csv_link).iloc[:,:8].dropna()
     config_numbers = experiment_table['Configuration Num'].unique().astype(int)
     
-    for config_number in tqdm([8]):
+    for config_number in tqdm(config_numbers):
         print('Config number', config_number)
         for TASK in ['CB', "BoolQ", "RTE"]:
             print('Task', TASK)
