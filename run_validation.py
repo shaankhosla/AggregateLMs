@@ -156,11 +156,12 @@ def main(TIME, config_number, TASK):
     
     st_time = time.time()
     report = run_evaluation(models, tokenizers, TASK, test_df)
-    print('Time for predictions', time.time() - st_time)
+    time_taken = time.time() - st_time
+    print('Time for predictions', time_taken)
     accuracy = report['accuracy']
     macro_f1 = report['macro avg']['f1-score']
     
-    row = [config_number, TASK, accuracy, macro_f1]
+    row = [config_number, TASK, time_taken, accuracy, macro_f1]
     writer.writerow(row)
     f.close()
     
@@ -171,14 +172,15 @@ if __name__ == "__main__":
     
     f = open(f'validation_report_{TIME}.csv', 'w')
     writer = csv.writer(f)
-    writer.writerow(['config', 'task', 'accuracy', 'macro_f1'])
+    writer.writerow(['config', 'task', 'time', 'accuracy', 'macro_f1'])
     f.close()
     f = open(f"error_{TIME}.txt", "w")
     f.close()
     
     
     experiment_table = pd.read_csv(experiment_table_csv_link).iloc[:,:8].dropna()
-    config_numbers = experiment_table['Configuration Num'].unique().astype(int)
+#     config_numbers = experiment_table['Configuration Num'].unique().astype(int)
+    config_numbers = list(range(50, 102)) + list(range(1, 8)) + list(range(12, 41)) + list(range(102, 118))
     
     for config_number in tqdm(config_numbers):
         print('Config number', config_number)
