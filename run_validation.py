@@ -181,6 +181,8 @@ if __name__ == "__main__":
     writer = csv.writer(f)
     writer.writerow(['config', 'task', 'accuracy', 'macro_f1'])
     f.close()
+    with open("log.txt", "w") as f:
+        continue
     
     
     experiment_table = pd.read_csv(experiment_table_csv_link).iloc[:,:8].dropna()
@@ -193,6 +195,9 @@ if __name__ == "__main__":
             try:
                 main(TIME, config_number, TASK)
             except Exception as e:
+                with open("log.txt") as f:
+                    f.write(f"ERROR on config {config_number} and task {TASK}!!!!\n")
+                    f.write(f"{e}\n\n")
                 print('ERROR!!')
                 print(e)
                 print(config_number)
