@@ -105,11 +105,8 @@ def run_evaluation(models, tokenizers, task_name, test_df):
     y_true = data_utils.extract_labels(test_df, task_name)
 
     for i in range(len(y_true)):
-        votingDict = defaultdict(int)
         summed_probs = []
-        for i, model in enumerate(models):
-            print(type(model))
-            tokenizer = tokenizers[i]
+        for tokenizer, model in zip(tokenizers, models):
             tokenizedinput = data_utils.encode_data(
                 test_df[i : i + 1], tokenizer, task_name
             )
@@ -118,19 +115,12 @@ def run_evaluation(models, tokenizers, task_name, test_df):
                 logits = model(input_ids.to(DEVICE)).logits
                 probs = torch.nn.functional.softmax(logits, dim=1)
                 summed_probs.append(np.array(probs[0].to('cpu')))
-
-            predicted_class_id = int(torch.argmax(logits, axis=-1)[0])
-            votingDict[model.config.id2label[predicted_class_id]] += 1
+            
         y_pred = np.array(summed_probs)
         y_pred = np.sum(summed_probs, axis=0)
         predicted_class_id = int(np.argmax(y_pred, axis=-1))
         y_preds.append(predicted_class_id)
-
-        
-#     if task_name == 'CB':  # more than two classes
-#         average_strategy = "macro"
-#     else:
-#         average_strategy = "binary"
+    print(y_preds)
 
     return classification_report(y_true, y_preds, output_dict=True) 
 
@@ -156,7 +146,7 @@ def main(TIME, config_number, TASK):
     
     
     
-    test_df = test_df.sample(10) ###### DELETE #######
+#     test_df = test_df.sample(10) ###### DELETE #######
     
     models, tokenizers = load_models(MODEL_PATHS)
     print(len(models), "models")
@@ -181,21 +171,21 @@ if __name__ == "__main__":
     writer = csv.writer(f)
     writer.writerow(['config', 'task', 'accuracy', 'macro_f1'])
     f.close()
-    with open("log.txt", "w") as f:
-        continue
+    with open("error_log_1.txt", "w") as f:
+        _ = None
     
     
     experiment_table = pd.read_csv(experiment_table_csv_link).iloc[:,:8].dropna()
     config_numbers = experiment_table['Configuration Num'].unique().astype(int)
     
-    for config_number in tqdm(config_numbers):
+    for config_number in tqdm([8]):
         print('Config number', config_number)
         for TASK in ['CB', "BoolQ", "RTE"]:
             print('Task', TASK)
             try:
                 main(TIME, config_number, TASK)
             except Exception as e:
-                with open("log.txt", 'a') as f:
+                with open("error_log_1.txt", 'a') as f:
                     f.write(f"ERROR on config {config_number} and task {TASK}!!!!\n")
                     f.write(f"{e}\n\n")
                 print('ERROR!!')
