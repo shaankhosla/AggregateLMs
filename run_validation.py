@@ -195,7 +195,7 @@ if __name__ == "__main__":
             try:
                 main(TIME, config_number, TASK)
             except Exception as e:
-                with open("log.txt") as f:
+                with open("log.txt", 'a') as f:
                     f.write(f"ERROR on config {config_number} and task {TASK}!!!!\n")
                     f.write(f"{e}\n\n")
                 print('ERROR!!')
