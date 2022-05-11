@@ -29,6 +29,7 @@ from model_roberta import data_utils
 from tqdm import tqdm
 import csv
 import datetime
+import time
 experiment_table_csv_link = "https://docs.google.com/spreadsheets/d/1nVZOPeP8s_zMcnDBw9QRAu_UI3jdbICFpolVc4rwT9A/export?format=csv&id=1nVZOPeP8s_zMcnDBw9QRAu_UI3jdbICFpolVc4rwT9A&gid=818501719"
 
 
@@ -120,7 +121,6 @@ def run_evaluation(models, tokenizers, task_name, test_df):
         y_pred = np.sum(summed_probs, axis=0)
         predicted_class_id = int(np.argmax(y_pred, axis=-1))
         y_preds.append(predicted_class_id)
-    print(y_preds)
 
     return classification_report(y_true, y_preds, output_dict=True) 
 
@@ -153,8 +153,10 @@ def main(TIME, config_number, TASK):
 
  
     models = prune_models(models, PRUNING_FACTORS)
-
+    
+    st_time = time.time()
     report = run_evaluation(models, tokenizers, TASK, test_df)
+    print('Time for predictions', time.time() - st_time)
     accuracy = report['accuracy']
     macro_f1 = report['macro avg']['f1-score']
     
@@ -171,8 +173,8 @@ if __name__ == "__main__":
     writer = csv.writer(f)
     writer.writerow(['config', 'task', 'accuracy', 'macro_f1'])
     f.close()
-    with open("error_log_1.txt", "w") as f:
-        _ = None
+    f = open(f"error_{TIME}.txt", "w")
+    f.close()
     
     
     experiment_table = pd.read_csv(experiment_table_csv_link).iloc[:,:8].dropna()
@@ -185,7 +187,7 @@ if __name__ == "__main__":
             try:
                 main(TIME, config_number, TASK)
             except Exception as e:
-                with open("error_log_1.txt", 'a') as f:
+                with open(f"error_{TIME}.txt", 'a') as f:
                     f.write(f"ERROR on config {config_number} and task {TASK}!!!!\n")
                     f.write(f"{e}\n\n")
                 print('ERROR!!')
