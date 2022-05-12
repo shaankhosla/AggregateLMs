@@ -129,7 +129,7 @@ def main():
     TIME = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     filePath = 'variance_validation_report_'+str(TIME)+'.csv'
     
-    f = open(filePath, 'w')
+    f = open(filePath, 'a')
     writer = csv.writer(f)
     writer.writerow(['config','model name', 'task','single_accuracy','single_macro_f1','double_bootstrapped_accuracy', 'double_bootstrapped_macro_f1'])
 
@@ -215,6 +215,6 @@ def main():
                         double_macro_f1 = report['macro avg']['f1-score']
                         row_to_write = [config_number,MODEL_NAME,TASK, single_accuracy, single_macro_f1,double_accuracy,double_macro_f1]
                         writer.writerow(row_to_write)
-                f.close()
+                        f.close()
 if __name__ == "__main__":
     main()
