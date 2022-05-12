@@ -131,3 +131,5 @@ dmypy.json
 
 #Slurm Logs
 slurm_logs/**
+error**
+validation_report**
