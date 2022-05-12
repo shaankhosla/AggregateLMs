@@ -1,0 +1,98 @@
+[
+    {
+      "model_name": "microsoft/deberta-base",
+      "task": "CB",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.0000392,
+      "weight_decay": 0.1430741527
+    },
+    {
+      "model_name": "microsoft/deberta-base",
+      "task": "BoolQ",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.0000249,
+      "weight_decay": 0.1430741527
+    },
+    {
+      "model_name": "microsoft/deberta-base",
+      "task": "RTE",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.0000249,
+      "weight_decay": 0.0354189315
+    },
+    {
+      "model_name": "microsoft/deberta-v3-small",
+      "task": "CB",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.0000392798,
+      "weight_decay": 0.1217384044
+    },
+    {
+      "model_name": "microsoft/deberta-v3-small",
+      "task": "BoolQ",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.0000249,
+      "weight_decay": 0.1430741527
+    },
+    {
+      "model_name": "microsoft/deberta-v3-small",
+      "task": "RTE",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.00004802,
+      "weight_decay": 0.1217384044
+    },
+    {
+      "model_name": "microsoft/deberta-v3-xsmall",
+      "task": "CB",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.0000249,
+      "weight_decay": 0.1430741527
+    },
+    {
+      "model_name": "microsoft/deberta-v3-xsmall",
+      "task": "BoolQ",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.00004802,
+      "weight_decay": 0.1217384044
+    },
+    {
+      "model_name": "microsoft/deberta-v3-xsmall",
+      "task": "RTE",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.00003927,
+      "weight_decay": 0.1739043484
+    },
+    {
+      "model_name": "microsoft/deberta-v3-large",
+      "task": "CB",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.0000249,
+      "weight_decay": 0.1217384044
+    },
+    {
+      "model_name": "microsoft/deberta-v3-large",
+      "task": "BoolQ",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.0000249,
+      "weight_decay": 0.1739043484
+    },
+    {
+      "model_name": "microsoft/deberta-v3-large",
+      "task": "RTE",
+      "n_epochs": 5,
+      "train_batch_size": 16,
+      "learning_rate": 0.0000249,
+      "weight_decay": 0.0354189315
+    }
+  ]
