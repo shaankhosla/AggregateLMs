@@ -146,7 +146,10 @@ def main():
     PRUNING_FACTORS = 0
     #Samplebasepath = "/scratch/ms12768/double_bootstrapped_models/deberta-base/BoolQ/var_analysis/microsoft/deberta-base/BoolQ/"
     for index,row in experiment_table.iterrows():
-        if index in ['0','1','2','3','4','5','6','7','8','9','10','11']:
+        print(index)
+        index_list = [0,1,2,3,4,5,6,7,8,9,10,11]
+        if index in index_list:
+            print('here')
             TASK = row['Task']
             MODEL_NAME = row['Model Type']
             doublebasepath = row['Double Bootstrap Path']
