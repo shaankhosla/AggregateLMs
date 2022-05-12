@@ -158,7 +158,7 @@ def main():
             single_macro_f1 = 0
             single_accuracy = 0
             for i in range(10):
-                f = open(filePath, 'w')
+                f = open(filePath, 'a')
                 writer = csv.writer(f)
                 for CASE in CASES:
                     if CASE =="Single":
