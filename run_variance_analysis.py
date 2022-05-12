@@ -146,69 +146,72 @@ def main():
     PRUNING_FACTORS = 0
     #Samplebasepath = "/scratch/ms12768/double_bootstrapped_models/deberta-base/BoolQ/var_analysis/microsoft/deberta-base/BoolQ/"
     for index,row in experiment_table.iterrows():
-        TASK = row['Task']
-        MODEL_NAME = row['Model Type']
-        doublebasepath = row['Double Bootstrap Path']
-        singlebasepath = row['Single Bootstrap Path']
-        config_number = row['Configuration Num']
-        single_macro_f1 = 0
-        single_accuracy = 0
-        for i in range(10):
-            for CASE in CASES:
-                if CASE =="Single":
-                    MODEL_PATHS = []
-                    if "pfi203" in singlebasepath:    
-                        MODEL_PATHS.append(singlebasepath.replace("*",str(i))+"/")
-                    else:
-                        MODEL_PATHS.append(singlebasepath.replace("*",str(i))+"/")
+        if index in ['0','1','2','3','4','5','6','7','8','9','10','11']:
+            TASK = row['Task']
+            MODEL_NAME = row['Model Type']
+            doublebasepath = row['Double Bootstrap Path']
+            singlebasepath = row['Single Bootstrap Path']
+            config_number = row['Configuration Num']
+            single_macro_f1 = 0
+            single_accuracy = 0
+            for i in range(10):
+                f = open(filePath, 'w')
+                writer = csv.writer(f)
+                for CASE in CASES:
+                    if CASE =="Single":
+                        MODEL_PATHS = []
+                        if "pfi203" in singlebasepath:    
+                            MODEL_PATHS.append(singlebasepath.replace("*",str(i))+"/")
+                        else:
+                            MODEL_PATHS.append(singlebasepath.replace("*",str(i))+"/")
 
-                    #writer.writerow(['config', 'accuracy', 'macro_f1'])
-                    #####    
-                    print(MODEL_PATHS)
-                    print("Evaluating", TASK)
-                    if TASK != "MultiRC":
-                        test_df = pd.read_json(f"./data/super/{TASK}/val.jsonl", lines=True, orient="records")
-                    else:
-                        test_df = data_utils.process_multirc_jsonl(f"./data/super/{TASK}/val.jsonl", " ")
+                        #writer.writerow(['config', 'accuracy', 'macro_f1'])
+                        #####    
+                        print(MODEL_PATHS)
+                        print("Evaluating", TASK)
+                        if TASK != "MultiRC":
+                            test_df = pd.read_json(f"./data/super/{TASK}/val.jsonl", lines=True, orient="records")
+                        else:
+                            test_df = data_utils.process_multirc_jsonl(f"./data/super/{TASK}/val.jsonl", " ")
 
-                    _, test_df = train_test_split(test_df, test_size=0.5, random_state=42)
-                    
-                    models, tokenizers = load_models(MODEL_PATHS)
-                    print(len(models), "models")
+                        _, test_df = train_test_split(test_df, test_size=0.5, random_state=42)
+                        
+                        models, tokenizers = load_models(MODEL_PATHS)
+                        print(len(models), "models")
 
-                    if PRUNE:
-                        models = prune_models(models, PRUNING_FACTORS)
+                        if PRUNE:
+                            models = prune_models(models, PRUNING_FACTORS)
 
-                    report = run_evaluation(models, tokenizers, TASK, test_df)
-                    single_accuracy = report['accuracy']
-                    single_macro_f1 = report['macro avg']['f1-score']
+                        report = run_evaluation(models, tokenizers, TASK, test_df)
+                        single_accuracy = report['accuracy']
+                        single_macro_f1 = report['macro avg']['f1-score']
 
 
-                if CASE =="Double":
-                    MODEL_PATHS = []
-                    for j in range(5):
-                        MODEL_PATHS.append(doublebasepath+"/bootstrapped_"+str(i)+"_"+str(j)+"/")
-                    #writer.writerow(['config', 'accuracy', 'macro_f1'])
-                    #####    
-                    print(MODEL_PATHS)
-                    print("Evaluating", TASK)
-                    if TASK != "MultiRC":
-                        test_df = pd.read_json(f"./data/super/{TASK}/val.jsonl", lines=True, orient="records")
-                    else:
-                        test_df = data_utils.process_multirc_jsonl(f"./data/super/{TASK}/val.jsonl", " ")
-                    _, test_df = train_test_split(test_df, test_size=0.5, random_state=42)
-                    
-                    models, tokenizers = load_models(MODEL_PATHS)
-                    print(len(models), "models")
+                    if CASE =="Double":
+                        MODEL_PATHS = []
+                        for j in range(5):
+                            MODEL_PATHS.append(doublebasepath+"/bootstrapped_"+str(i)+"_"+str(j)+"/")
+                        #writer.writerow(['config', 'accuracy', 'macro_f1'])
+                        #####    
+                        print(MODEL_PATHS)
+                        print("Evaluating", TASK)
+                        if TASK != "MultiRC":
+                            test_df = pd.read_json(f"./data/super/{TASK}/val.jsonl", lines=True, orient="records")
+                        else:
+                            test_df = data_utils.process_multirc_jsonl(f"./data/super/{TASK}/val.jsonl", " ")
+                        _, test_df = train_test_split(test_df, test_size=0.5, random_state=42)
+                        
+                        models, tokenizers = load_models(MODEL_PATHS)
+                        print(len(models), "models")
 
-                    if PRUNE:
-                        models = prune_models(models, PRUNING_FACTORS)
+                        if PRUNE:
+                            models = prune_models(models, PRUNING_FACTORS)
 
-                    report = run_evaluation(models, tokenizers, TASK, test_df)
-                    double_accuracy = report['accuracy']
-                    double_macro_f1 = report['macro avg']['f1-score']
-                    row_to_write = [config_number,MODEL_NAME,TASK, single_accuracy, single_macro_f1,double_accuracy,double_macro_f1]
-                    writer.writerow(row_to_write)
-    f.close()
+                        report = run_evaluation(models, tokenizers, TASK, test_df)
+                        double_accuracy = report['accuracy']
+                        double_macro_f1 = report['macro avg']['f1-score']
+                        row_to_write = [config_number,MODEL_NAME,TASK, single_accuracy, single_macro_f1,double_accuracy,double_macro_f1]
+                        writer.writerow(row_to_write)
+                f.close()
 if __name__ == "__main__":
     main()
