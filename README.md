@@ -1,5 +1,8 @@
 # AggregateLMs
 
+## Overview
+This repo contains all of the training and evaluation code for the paper we posted on https://arxiv.org/abs/2207.09099 to analyze bagging methods on language models
+
 ## Directory Structure
 ```
 AggregateLMs/
